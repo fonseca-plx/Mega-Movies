@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Profile and Watchlist</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&amp;family=Noto+Serif:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#313030",
+                        "secondary": "#c8c6c5",
+                        "outline": "#8e9192",
+                        "surface": "#121317",
+                        "on-surface-variant": "#c4c7c7",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "secondary-container": "#474746",
+                        "on-error": "#690005",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "surface-bright": "#38393d",
+                        "on-background": "#e3e2e7",
+                        "tertiary-container": "#100900",
+                        "on-tertiary": "#412d00",
+                        "surface-tint": "#c9c6c5",
+                        "on-secondary-container": "#b7b5b4",
+                        "inverse-on-surface": "#2f3034",
+                        "outline-variant": "#444748",
+                        "primary-fixed": "#e5e2e1",
+                        "on-primary-fixed": "#1c1b1b",
+                        "surface-container": "#1e1f23",
+                        "tertiary-fixed": "#ffdea5",
+                        "background": "#121317",
+                        "on-tertiary-fixed": "#261900",
+                        "surface-dim": "#121317",
+                        "on-secondary-fixed": "#1b1b1c",
+                        "surface-container-highest": "#343539",
+                        "on-tertiary-container": "#957432",
+                        "on-surface": "#e3e2e7",
+                        "primary-container": "#0a0a0a",
+                        "primary": "#c9c6c5",
+                        "surface-container-high": "#292a2e",
+                        "on-secondary": "#303030",
+                        "on-secondary-fixed-variant": "#474746",
+                        "tertiary": "#e9c176",
+                        "on-tertiary-fixed-variant": "#5d4201",
+                        "surface-variant": "#343539",
+                        "on-primary-fixed-variant": "#474646",
+                        "surface-container-low": "#1a1b1f",
+                        "error-container": "#93000a",
+                        "primary-fixed-dim": "#c9c6c5",
+                        "surface-container-lowest": "#0d0e12",
+                        "on-primary-container": "#7b7979",
+                        "inverse-surface": "#e3e2e7",
+                        "inverse-primary": "#5f5e5e",
+                        "secondary-fixed": "#e5e2e1",
+                        "tertiary-fixed-dim": "#e9c176"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-lg": "32px",
+                        "section-gap": "48px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "container-padding": "24px",
+                        "unit": "8px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "display-md": ["Noto Serif", "serif"],
+                        "label-sm": ["Be Vietnam Pro", "sans-serif"],
+                        "label-lg": ["Be Vietnam Pro", "sans-serif"],
+                        "display-lg": ["Noto Serif", "serif"],
+                        "body-md": ["Be Vietnam Pro", "sans-serif"],
+                        "headline-md": ["Be Vietnam Pro", "sans-serif"],
+                        "headline-lg": ["Noto Serif", "serif"],
+                        "body-lg": ["Be Vietnam Pro", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "display-md": ["36px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "fontWeight": "500" }],
+                        "label-lg": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen pb-24 md:pb-0 font-body-md">
+<!-- TopAppBar -->
+<header class="docked full-width top-0 z-50 bg-black/80 backdrop-blur-md shadow-none flex items-center w-full px-6 py-4 border-b border-white/10 md:hidden flex justify-between">
+<div class="font-serif tracking-tight text-xl font-bold italic text-amber-500 dark:text-amber-500 tracking-widest uppercase">
+            Mega Movies
+        </div>
+<div class="w-8 h-8 rounded-full bg-surface-container overflow-hidden border border-outline/30">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="close up portrait of young woman with dark hair against neutral background soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8TfDJO7jlNoe7rIdI1k_giMx8yCdCddmkv2ZJN8FFQPJVv8jhLZuZNrecLZtN1qEvEJ98gd4sPies0gTs6J_1z9GXiD1-bCbHOesKeovsnuXOqjyRxGQwTHMd1cJ6w-_oUAo6XpP2UCOiOs3ifNeW8-JnMMqDLmFv1J8Sj_rSrPKrInhR8OIUq7DwNjVrzC3k-N4m_Q6jbivLYAleaaT0T2e77Z7Py-4xoFpcF9meMTsAHnT5dy3BJHYO7_FxEuBE2nN4Md_hDfw"/>
+</div>
+</header>
+<!-- Main Content Container -->
+<main class="max-w-5xl mx-auto px-gutter md:px-container-padding pt-6 md:pt-12 flex flex-col gap-section-gap">
+<!-- User Profile Hero -->
+<section class="flex flex-col md:flex-row items-center md:items-start gap-stack-lg bg-[#1C1C1C] p-8 rounded-xl border border-white/10 relative overflow-hidden">
+<!-- Glassmorphism decorative glow -->
+<div class="absolute -top-20 -right-20 w-64 h-64 bg-tertiary/20 blur-[100px] rounded-full pointer-events-none"></div>
+<div class="relative group">
+<div class="w-32 h-32 rounded-full overflow-hidden border-2 border-tertiary shadow-[0_0_15px_rgba(233,193,118,0.3)]">
+<img alt="Sarah Jenkins" class="w-full h-full object-cover" data-alt="close up portrait of young woman with dark hair against neutral background soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2P4vjL0H1AapFYgA340E3ApfWHLYNCA32a-t85jkb4c9DPGnM9l7ZPZgcqzLZ0T1WTj01RLVMG61SyLLfGGpF3jd4HGSjWdsJormji6Q-cHPjo0S2o7GkZ4tMHSbmWOV0IFTuGTZZ2SWvSqUl9bHdQUfIk2F2PHe7eyK7XaYKf5LHP0Djk5RixLH7zWEGBlBADyRuKgpIPC0hMpXik0AXTH12eVrElEqY8tr8A6rNZjthUos01b2-LQqJj1pQR7rwRyc8WPDf4Eo"/>
+</div>
+<button class="absolute bottom-0 right-0 w-10 h-10 bg-surface-container-high rounded-full flex items-center justify-center border border-white/10 text-on-surface hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="flex-1 text-center md:text-left flex flex-col gap-stack-sm z-10">
+<h1 class="font-display-md text-display-md text-on-surface">Sarah Jenkins</h1>
+<p class="font-body-md text-body-md text-secondary">Cinephile since 2018 • 142 Movies Watched</p>
+<div class="flex flex-wrap justify-center md:justify-start gap-3 mt-stack-md">
+<button class="px-6 py-2 bg-gradient-to-b from-[#2E6A99] to-[#1A4568] text-white rounded font-label-lg text-label-lg hover:shadow-[0_0_15px_rgba(46,106,153,0.4)] transition-all">
+                        Edit Profile
+                    </button>
+<button class="px-6 py-2 border border-tertiary text-tertiary rounded font-label-lg text-label-lg hover:bg-tertiary/10 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="star">star</span>
+                        Premium Plan
+                    </button>
+</div>
+</div>
+<!-- Quick Links / Settings -->
+<div class="flex md:flex-col gap-4 w-full md:w-auto mt-6 md:mt-0 pt-6 md:pt-0 border-t md:border-t-0 md:border-l border-white/10 md:pl-8 z-10">
+<a class="flex-1 md:flex-none flex items-center gap-3 text-secondary hover:text-tertiary transition-colors font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex-1 md:flex-none flex items-center gap-3 text-secondary hover:text-tertiary transition-colors font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined" data-icon="credit_card">credit_card</span>
+<span>Billing</span>
+</a>
+<a class="flex-1 md:flex-none flex items-center gap-3 text-secondary hover:text-tertiary transition-colors font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>History</span>
+</a>
+</div>
+</section>
+<!-- Watchlist Section -->
+<section class="flex flex-col gap-stack-md">
+<div class="flex justify-between items-end border-b border-white/10 pb-4">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">My Watchlist</h2>
+<div class="flex gap-4">
+<button class="text-secondary hover:text-on-surface transition-colors flex items-center gap-1 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="filter_list">filter_list</span>
+                        Filter
+                    </button>
+<button class="text-secondary hover:text-on-surface transition-colors flex items-center gap-1 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="sort">sort</span>
+                        Sort
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout for Watchlist -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-gutter mt-stack-sm">
+<!-- Featured Item (Spans 2 cols) -->
+<div class="col-span-2 row-span-2 group relative rounded-xl overflow-hidden bg-[#1C1C1C] border border-white/10 hover:shadow-[0_0_20px_rgba(233,193,118,0.2)] transition-all duration-300 transform hover:scale-[1.02]">
+<div class="absolute inset-0 z-10 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+<img alt="Dune" class="w-full h-full object-cover aspect-[4/3] md:aspect-auto md:h-[400px]" data-alt="cinematic shot of vast desert landscape with futuristic sci-fi structures in distance warm orange atmospheric lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyzBN97ups_i6rASITXhous2v2i2jEq7NH2zFpcMtbePUER4i3r4anhKuowcFS19rR2YlLt9t1pbhVSbS8qpgkuaY2M3SPwdqa1cDGqEUU02hy94JmGjjD9ikg6_CNDdBsvPK1zC4dO8F0zE8PqfCDKkFqbFIsyaZe39MBEAXY7fY9tFS9EiTC9yQYcug9EgkVyXxT70fFolTYEBHB8-Or3vRl0IIRTArImmUM-CK9Zr2wthVNsFmWxsCtCZaPLaMUujF6_OSL3p0"/>
+<div class="absolute bottom-0 left-0 p-6 z-20 flex flex-col gap-stack-sm w-full">
+<div class="flex gap-2 mb-2">
+<span class="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full font-label-sm text-label-sm text-on-surface border border-white/5">Sci-Fi</span>
+<span class="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full font-label-sm text-label-sm text-on-surface border border-white/5">Epic</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-white">Dune: Part Two</h3>
+<div class="flex items-center justify-between mt-2">
+<p class="font-body-md text-body-md text-secondary line-clamp-2 pr-4">Paul Atreides unites with Chani and the Fremen while on a warpath of revenge against the conspirators who destroyed his family.</p>
+<button class="w-12 h-12 rounded-full bg-tertiary/20 backdrop-blur text-tertiary flex items-center justify-center hover:bg-tertiary hover:text-black transition-colors shrink-0">
+<span class="material-symbols-outlined fill" data-icon="play_arrow">play_arrow</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Regular Item -->
+<div class="group relative rounded-xl overflow-hidden bg-[#1C1C1C] border border-white/10 hover:shadow-[0_0_15px_rgba(46,106,153,0.3)] transition-all duration-300 transform hover:scale-[1.03]">
+<div class="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<img alt="Oppenheimer" class="w-full aspect-[2/3] object-cover" data-alt="abstract explosion of fiery orange and dark grey smoke cinematic lighting dramatic contrast" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZJMpYRqeYp8PdG9K5RofGsn2o_tlWX-MSBSo92CAO3HV-DeVS9vECSJWhbn6QCrgPf5E3UmLdm5J--3zGLZP8wURoi_ns24dbHCdF9nczD6JX8Yf7oprmbeMMRwxzc_wNm_G1u4yY1YWcEOkN9NBQrQHwypLJHWfmo3zuJGI2-4SqIqoW9LJD9L27CetHVq6tn0A_TNNo-yfRw9LBCSyJ3Z5siitUP5neVOw67eajMwKTQL99joJsU5JZZK4sqkS5kPT5Z4il2fI"/>
+<button class="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined text-[18px] fill" data-icon="bookmark">bookmark</span>
+</button>
+<div class="absolute bottom-0 left-0 p-4 z-20 w-full translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+<h3 class="font-headline-md text-headline-md text-white mb-1">Oppenheimer</h3>
+<p class="font-label-sm text-label-sm text-secondary">2023 • Biography</p>
+</div>
+</div>
+<!-- Regular Item -->
+<div class="group relative rounded-xl overflow-hidden bg-[#1C1C1C] border border-white/10 hover:shadow-[0_0_15px_rgba(46,106,153,0.3)] transition-all duration-300 transform hover:scale-[1.03]">
+<div class="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<img alt="Blade Runner" class="w-full aspect-[2/3] object-cover" data-alt="neon lit cyberpunk city street at night raining moody blue and pink atmospheric lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1Yf5kCju_o_OI2JYXJexMoI7nQvHYL7Wg-tr8ESdzZ83M8v6zc7mE8_nJ3e5rYLwlnX9hAqWmpbFHmU6C1vIJri8wjxeFGXyE5K6ddaEqs2b4wRDPUYPMNA3dvzBlVxqgqB6nn5ItVFBnKVkk_gJNFjPw2wWOb5ShbNrfRPq8aO2btWKxzQ162XbdQcrnbZhebEPZQ7UmyIqphmdI6kKi4p1K5IjLdAUjSR0Wq6lS6_fRU3U35z6Y_8gpHlQr6ogIvDCoRcs-j3Q"/>
+<button class="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined text-[18px] fill" data-icon="bookmark">bookmark</span>
+</button>
+<div class="absolute bottom-0 left-0 p-4 z-20 w-full translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+<h3 class="font-headline-md text-headline-md text-white mb-1">Blade Runner 2049</h3>
+<p class="font-label-sm text-label-sm text-secondary">2017 • Sci-Fi</p>
+</div>
+</div>
+<!-- Regular Item -->
+<div class="group relative rounded-xl overflow-hidden bg-[#1C1C1C] border border-white/10 hover:shadow-[0_0_15px_rgba(46,106,153,0.3)] transition-all duration-300 transform hover:scale-[1.03]">
+<div class="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<img alt="Parasite" class="w-full aspect-[2/3] object-cover" data-alt="modern minimalist house interior geometric lines cold stark lighting dramatic composition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCvY1lHM_NWXg0tH82sZwGIngLLEiBs4KtMH4MRkDqvCOA5dJVyEk8On6vl8hC7gc3t1pBFNj-QPNy4SI8NCbGZqOurDVmjCmI1RnAJAQ0go1kNIdr4tfeXFt0pfpBRVdsxRAVEH00cPTkqEN_DKV8KerHyMBxfnFeyAI73xfQkgS_ldUWWBGfJ9Xwz2RJD8n6BNPepyRv2d8bww64bF6IiMf-pyIbM4om8AMLEpp0gl0Uq2fZGzZORu5OGXOmZ6bfJiE25ot359A"/>
+<button class="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined text-[18px] fill" data-icon="bookmark">bookmark</span>
+</button>
+<div class="absolute bottom-0 left-0 p-4 z-20 w-full translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+<h3 class="font-headline-md text-headline-md text-white mb-1">Parasite</h3>
+<p class="font-label-sm text-label-sm text-secondary">2019 • Thriller</p>
+</div>
+</div>
+<!-- Regular Item -->
+<div class="group relative rounded-xl overflow-hidden bg-[#1C1C1C] border border-white/10 hover:shadow-[0_0_15px_rgba(46,106,153,0.3)] transition-all duration-300 transform hover:scale-[1.03]">
+<div class="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<img alt="Interstellar" class="w-full aspect-[2/3] object-cover" data-alt="starry night sky cosmos galaxy view deep space dark blue and purple hues" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAJeuenoZYtOXsZXEvAxRbsCO1m0Ya9UMHYyltzRt3v-NtF7s5iurL6h6FK6_6MohYy_AItfdomgH1AT2UWfSwD9nfH52m_9c9cstupmQXLGOWP6QTKJ_EhyNeHqpHdgX3JYJT-_Oq09IQqelkvxCI1R0bFREZOn5740vHhtlk0BFbQDTLUePVAt3hoWvBf_QIpqs77Q66Vv9zr9OLL1HYA6EX8BpAsIcTWTHmapLp9JzvS4jeYxB8bccYJrvVH6pgLvRYoSVFvm0"/>
+<button class="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white hover:text-tertiary transition-colors">
+<span class="material-symbols-outlined text-[18px] fill" data-icon="bookmark">bookmark</span>
+</button>
+<div class="absolute bottom-0 left-0 p-4 z-20 w-full translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+<h3 class="font-headline-md text-headline-md text-white mb-1">Interstellar</h3>
+<p class="font-label-sm text-label-sm text-secondary">2014 • Sci-Fi</p>
+</div>
+</div>
+</div>
+<div class="flex justify-center mt-stack-md">
+<button class="px-6 py-2 border border-outline/30 text-secondary rounded font-label-lg text-label-lg hover:bg-white/5 transition-all">
+                    Load More
+                </button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-white/5 bg-black/90 backdrop-blur-xl flex justify-around items-center h-20 px-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.5)] md:hidden">
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-sky-300 transition-colors w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-serif text-[10px] font-medium tracking-wide uppercase">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-sky-300 transition-colors w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="explore">explore</span>
+<span class="font-serif text-[10px] font-medium tracking-wide uppercase">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)] scale-110 duration-300 ease-out w-16" href="#">
+<span class="material-symbols-outlined mb-1 fill" data-icon="bookmarks">bookmarks</span>
+<span class="font-serif text-[10px] font-medium tracking-wide uppercase">Watchlist</span>
+</a>
+</nav>
+<!-- Desktop Side Nav Overlay (Implied functionality for md+ screens, mostly hidden structural element based on prompt scope) -->
+<div class="hidden md:flex fixed left-0 top-0 h-full w-20 flex-col items-center py-8 bg-surface-container-highest border-r border-white/5 z-40">
+<div class="font-serif tracking-tight text-2xl font-bold italic text-amber-500 tracking-widest uppercase mb-12" style="writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg);">
+            MM
+        </div>
+<div class="flex flex-col gap-8 w-full items-center">
+<a class="text-zinc-500 hover:text-sky-300 p-3 rounded-xl hover:bg-white/5 transition-all" href="#"><span class="material-symbols-outlined" data-icon="home">home</span></a>
+<a class="text-zinc-500 hover:text-sky-300 p-3 rounded-xl hover:bg-white/5 transition-all" href="#"><span class="material-symbols-outlined" data-icon="explore">explore</span></a>
+<a class="text-sky-400 bg-sky-400/10 p-3 rounded-xl drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]" href="#"><span class="material-symbols-outlined fill" data-icon="bookmarks">bookmarks</span></a>
+</div>
+</div>
+<!-- Desktop padding adjustment to accommodate side nav -->
+<style>
+        @media (min-width: 768px) {
+            body { padding-left: 5rem; }
+        }
+    </style>
+</body></html>

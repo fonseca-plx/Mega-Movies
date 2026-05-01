@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mega Movies - Explore</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&amp;family=Noto+Serif:ital,wght@0,600;0,700;1,600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#313030",
+                        "secondary": "#c8c6c5",
+                        "outline": "#8e9192",
+                        "surface": "#121317",
+                        "on-surface-variant": "#c4c7c7",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "secondary-container": "#474746",
+                        "on-error": "#690005",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "surface-bright": "#38393d",
+                        "on-background": "#e3e2e7",
+                        "tertiary-container": "#100900",
+                        "on-tertiary": "#412d00",
+                        "surface-tint": "#c9c6c5",
+                        "on-secondary-container": "#b7b5b4",
+                        "inverse-on-surface": "#2f3034",
+                        "outline-variant": "#444748",
+                        "primary-fixed": "#e5e2e1",
+                        "on-primary-fixed": "#1c1b1b",
+                        "surface-container": "#1e1f23",
+                        "tertiary-fixed": "#ffdea5",
+                        "background": "#121317",
+                        "on-tertiary-fixed": "#261900",
+                        "surface-dim": "#121317",
+                        "on-secondary-fixed": "#1b1b1c",
+                        "surface-container-highest": "#343539",
+                        "on-tertiary-container": "#957432",
+                        "on-surface": "#e3e2e7",
+                        "primary-container": "#0a0a0a",
+                        "primary": "#c9c6c5",
+                        "surface-container-high": "#292a2e",
+                        "on-secondary": "#303030",
+                        "on-secondary-fixed-variant": "#474746",
+                        "tertiary": "#e9c176",
+                        "on-tertiary-fixed-variant": "#5d4201",
+                        "surface-variant": "#343539",
+                        "on-primary-fixed-variant": "#474646",
+                        "surface-container-low": "#1a1b1f",
+                        "error-container": "#93000a",
+                        "primary-fixed-dim": "#c9c6c5",
+                        "surface-container-lowest": "#0d0e12",
+                        "on-primary-container": "#7b7979",
+                        "inverse-surface": "#e3e2e7",
+                        "inverse-primary": "#5f5e5e",
+                        "secondary-fixed": "#e5e2e1",
+                        "tertiary-fixed-dim": "#e9c176"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-lg": "32px",
+                        "section-gap": "48px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "container-padding": "24px",
+                        "unit": "8px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "display-md": ["Noto Serif"],
+                        "label-sm": ["Be Vietnam Pro"],
+                        "label-lg": ["Be Vietnam Pro"],
+                        "display-lg": ["Noto Serif"],
+                        "body-md": ["Be Vietnam Pro"],
+                        "headline-md": ["Be Vietnam Pro"],
+                        "headline-lg": ["Noto Serif"],
+                        "body-lg": ["Be Vietnam Pro"]
+                    },
+                    "fontSize": {
+                        "display-md": ["36px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "fontWeight": "500" }],
+                        "label-lg": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "headline-lg": ["28px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen pb-24 md:pb-0 pt-[72px]">
+<!-- TopAppBar (Web & Mobile) -->
+<header class="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/10 shadow-none">
+<div class="flex justify-between items-center w-full px-6 py-4">
+<!-- Brand Logo -->
+<div class="text-xl font-bold italic text-amber-500 dark:text-amber-500 tracking-widest uppercase font-serif tracking-tight">
+                Mega Movies
+            </div>
+<!-- Web Navigation Cluster (Hidden on mobile by default in this layout, but consistent with structure) -->
+<nav class="hidden md:flex items-center gap-8">
+<a class="font-label-lg text-label-lg text-zinc-400 hover:text-amber-400 transition-colors" href="#">Home</a>
+<a class="font-label-lg text-label-lg text-sky-400 hover:text-amber-400 transition-colors" href="#">Explore</a>
+<a class="font-label-lg text-label-lg text-zinc-400 hover:text-amber-400 transition-colors" href="#">Watchlist</a>
+</nav>
+<!-- Trailing Avatar -->
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" style="font-size: 20px;">person</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="max-w-[1200px] mx-auto px-gutter md:px-container-padding py-section-gap">
+<!-- Search Section -->
+<div class="mb-section-gap max-w-2xl mx-auto text-center">
+<h2 class="font-display-md text-display-md text-on-surface mb-stack-lg">Discover Cinema</h2>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant z-10 group-focus-within:text-tertiary transition-colors" data-icon="search">search</span>
+<input class="w-full bg-[#1C1C1C] border border-[#1C1C1C]/10 text-on-surface font-label-lg text-label-lg rounded-xl pl-12 pr-4 py-4 focus:ring-1 focus:ring-[#c8c6c5] focus:border-[#c8c6c5] transition-all focus:shadow-[0_0_15px_rgba(200,198,197,0.3)] placeholder:text-on-surface-variant outline-none" placeholder="Search by title, director, or actor..." type="text"/>
+</div>
+</div>
+<!-- Filters Section -->
+<div class="flex flex-wrap items-center justify-center gap-stack-md mb-section-gap">
+<div class="flex items-center gap-2 bg-[#1C1C1C] rounded-full px-4 py-2 border border-white/10">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="calendar_month">calendar_month</span>
+<select class="bg-transparent text-secondary font-label-sm text-label-sm outline-none border-none focus:ring-0 cursor-pointer appearance-none pr-4">
+<option class="bg-surface text-on-surface" value="">Decade</option>
+<option class="bg-surface text-on-surface" value="2020">2020s</option>
+<option class="bg-surface text-on-surface" value="2010">2010s</option>
+<option class="bg-surface text-on-surface" value="2000">2000s</option>
+<option class="bg-surface text-on-surface" value="1990">1990s</option>
+<option class="bg-surface text-on-surface" value="1980">1980s</option>
+<option class="bg-surface text-on-surface" value="classic">Pre-1980s</option>
+</select>
+<span class="material-symbols-outlined text-sm text-secondary absolute right-3 pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+<div class="flex items-center gap-2 bg-[#1C1C1C] rounded-full px-4 py-2 border border-white/10">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="star_rate">star_rate</span>
+<select class="bg-transparent text-secondary font-label-sm text-label-sm outline-none border-none focus:ring-0 cursor-pointer appearance-none pr-4">
+<option class="bg-surface text-on-surface" value="">Rating</option>
+<option class="bg-surface text-on-surface" value="9">9.0+</option>
+<option class="bg-surface text-on-surface" value="8">8.0+</option>
+<option class="bg-surface text-on-surface" value="7">7.0+</option>
+</select>
+<span class="material-symbols-outlined text-sm text-secondary absolute right-3 pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+<button class="flex items-center gap-2 bg-transparent border border-outline text-secondary font-label-sm text-label-sm rounded-full px-4 py-2 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span>
+                More Filters
+            </button>
+</div>
+<!-- Bento Grid: Genres -->
+<h3 class="font-headline-md text-headline-md text-on-surface mb-stack-md">Explore Genres</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-stack-md mb-section-gap">
+<!-- Large Card -->
+<a class="group relative block rounded-xl overflow-hidden md:col-span-2 lg:col-span-2 md:row-span-2 aspect-[4/3] md:aspect-auto border border-white/10 bg-[#1C1C1C]" href="#">
+<img alt="Film Noir" class="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700" data-alt="black and white classic film noir scene with high contrast lighting silhouettes and dramatic shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDh2FI4s1aMNH_5WNQaHZxki-vpETDyF_BKbzzrAY1IH_C_firKJoIWRK8TB9YROElplLh146aAbstZlELGdKWuHMAVzcsRXLbGFjFhn1WKEvlkg4B3s-HJJYsWHNbl4gAeu0h5kvJQZRlKS5ld2cbygt92ZGP_QFA1K4oyV6Jz21bZeOAs8DyB1lQ0RtJ5vu7KxyrEz29YmjUtS4NIzsk_FknMCg9TwmkgKGSErQuAK4-Zs_amMPM6ojQuBTsu1PUVe8NXbvBdsrI"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-6 w-full">
+<div class="inline-block px-3 py-1 bg-white/10 backdrop-blur-md rounded-full font-label-sm text-label-sm text-on-surface mb-2">Featured Genre</div>
+<h4 class="font-headline-lg text-headline-lg text-on-surface group-hover:text-tertiary transition-colors">Film Noir</h4>
+<p class="font-body-md text-body-md text-secondary mt-1 hidden md:block">Shadows, secrets, and suspense. Dive into the dark underbelly of classic cinema.</p>
+</div>
+<div class="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-xl pointer-events-none group-focus:ring-tertiary/50 group-focus:shadow-[0_0_15px_rgba(233,193,118,0.3)] transition-all"></div>
+</a>
+<!-- Standard Cards -->
+<a class="group relative block rounded-xl overflow-hidden aspect-[4/3] md:aspect-square border border-white/10 bg-[#1C1C1C]" href="#">
+<img alt="Classic Hollywood" class="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-700" data-alt="vintage movie theater marquee glowing with warm neon lights at night classic hollywood glamour" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmNTQlSR-dVEqVqNcsn1JsvdZmlfViqBaD_BpnfsxoNvB8L6QslNyeZzpLSBFiuUMUGmiyJ9NfCDwuW_W2lMUuMB1t8-iauQYzuSAw2hiPPYeiaZ62R6qV5XsD_73WT88AwkV1kjQgA_Whg1oqIBYv5rNIeiTAUvWEZglBAxEdzXRrrSJnuGhdjJSClBMusWED4p5DMKh0g9tzeHxBY3LaAQUAQyehJNcTzlE93q0mzIUqdXa_W5nOtD9nvSwmVnHUeZgxFtFlhCE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-4">
+<h4 class="font-headline-md text-headline-md text-on-surface group-hover:text-tertiary transition-colors">Classic Hollywood</h4>
+</div>
+</a>
+<a class="group relative block rounded-xl overflow-hidden aspect-[4/3] md:aspect-square border border-white/10 bg-[#1C1C1C]" href="#">
+<img alt="New Wave" class="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-700 grayscale sepia-[.3]" data-alt="vintage 16mm film camera on a tripod outdoors artistic black and white photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_1iVTGPVZXcb7B8VrVTPQWGyi8FW4nxetpfvKqWxf1rfqeDpYxoXB_3sobg7-HexQJlm4O4G8hmsg73NSldyh1t91URI0JQ6CuTNj12X6kOwN-Loc5RO6h1avyAzO0cSXiKrdi_1eaoJmZqSAg-auxniWvfV0GbbJSoe61y9OsLJaYcGJRVNzdaM-4IZotL3V-woDylviF4IKHokEf3ZHdW-J3aZOhdmLCvSE9RIzoHeKo-GLHRfA8qrBlfTbH5TFfu3fthEHD2E"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-4">
+<h4 class="font-headline-md text-headline-md text-on-surface group-hover:text-tertiary transition-colors">French New Wave</h4>
+</div>
+</a>
+<a class="group relative block rounded-xl overflow-hidden aspect-[4/3] md:aspect-square border border-white/10 bg-[#1C1C1C]" href="#">
+<img alt="Sci-Fi Masterpieces" class="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-700" data-alt="abstract glowing blue and neon lights depicting a futuristic sci-fi corridor or hyperspace jump" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFHy3AftgrqkmknPsFdjx049Zm4TTIn08zOhWJP6yXULvjMT2HBYI8i-Oqoy5eg0sgKThryjabX-mocTeZYoLPq9sT3Awm5vRuVbYeSkH4ZvQc4shXFaWiVoO8ruXnuSOqN5HA0c5QAiPr3yAI6TnrMro_Oys327YUQSXx3ZoNdAAKRZw2_qz1PzzzCgOj2oalTzuTHZPZBWkFr_2gOw_ZiJTxbtLS7Rino-0xv1nmXjhHvKd4mQLbFytUuDoqcvWyGgiGDh0vaD8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-4">
+<h4 class="font-headline-md text-headline-md text-on-surface group-hover:text-tertiary transition-colors">Sci-Fi Visionaries</h4>
+</div>
+</a>
+<a class="group relative block rounded-xl overflow-hidden aspect-[4/3] md:aspect-square border border-white/10 bg-[#1C1C1C]" href="#">
+<img alt="Italian Neorealism" class="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-700 grayscale" data-alt="gritty black and white street photography showing an empty cobbled alleyway in a historic european city" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASaLwnv2EX4xPmY_xqDaYuwBaYzOxhpTsT9qNAer6Vcn9E90n5wQCg9Unm_IQK3gFHzOumsZzOxlCGkl8LsQBaJo5fkJDK6E-_eHQ0moXvU8f6f49n86QmIzB1Ah-JuzyKD3A1BWkZMGzWAAPy4kj63lBwAsAzHMKOmdOX1DdtaGD20DEZi_DeKZsGX5ko-aV48PMh6OV8TSoj_HqaZWQjPfeSCJ2Y5jaIzqEixNVVSs_4HAybXag6_gks2LBhQsTqdGmrPkO_45o"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-4">
+<h4 class="font-headline-md text-headline-md text-on-surface group-hover:text-tertiary transition-colors">Italian Neorealism</h4>
+</div>
+</a>
+<!-- Wide Card -->
+<a class="group relative block rounded-xl overflow-hidden md:col-span-3 lg:col-span-4 h-48 border border-white/10 bg-[#1C1C1C]" href="#">
+<img alt="Auteur Directors" class="w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-all duration-700" data-alt="director chair on a dark movie set with dramatic spotlighting and atmospheric smoke in the background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCoMeANh31Fkg6dw1GyuVdgFAK05-3-FJOhbt-NVcdFuVFuBHp6AYBI2VHqzS_T_BfxeI43sH_Vtzoe5kOoczlD34vmA2boTclzwMSUzLu0L4mdWZ-Iy85_BK2DC06YxAvss9kgTSivfRB8gWgM8da95VvfuVos9iYFypJpmKjaw5YqjXBs0pI1lCj5qC2NHr3m7AkqZSGqG3LcNQSamHT9jo4K5KcoZ2anTff4wWGjxQ_3t10bgD-sdm0l0PLwLXx3wABtxHKkSc"/>
+<div class="absolute inset-0 bg-gradient-to-r from-black/90 to-transparent"></div>
+<div class="absolute inset-y-0 left-0 flex flex-col justify-center p-8 w-full md:w-1/2">
+<h4 class="font-headline-lg text-headline-lg text-on-surface group-hover:text-tertiary transition-colors mb-2">Auteur Spotlights</h4>
+<p class="font-body-md text-body-md text-secondary">Curated collections focused on the distinct visions of master directors.</p>
+</div>
+</a>
+</div>
+<!-- Trending Horizontal Scroll -->
+<h3 class="font-headline-md text-headline-md text-on-surface mb-stack-md flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary" data-icon="trending_up">trending_up</span>
+            Trending Searches
+         </h3>
+<div class="flex overflow-x-auto gap-stack-md pb-4 snap-x hide-scrollbar" style="scrollbar-width: none; -ms-overflow-style: none;">
+<!-- Hidden scrollbar pseudo-element logic is native to some browsers, inline styles to ensure clean look -->
+<a class="snap-start shrink-0 w-[280px] bg-[#1C1C1C] border border-white/10 rounded-lg p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors focus:ring-1 focus:ring-tertiary outline-none group" href="#">
+<div class="w-12 h-16 bg-surface-variant rounded overflow-hidden shrink-0">
+<img alt="Movie poster" class="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all" data-alt="abstract close up of a vintage movie clapperboard in black and white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRUxPLGHK_nYXs8R0HJZvDyf8nisdtwmSUalkhemnzyOoEhce1PKdS44cq-_KFKUc7ZxrKbACQhHh_ALkRqNBSSgaQWIR-PTQal_TpVjDCxe1G9MDg1EmBlNtIMS4IZ2JwLCB1BnATKSh12nqgKwOCssZVnlDODkXF6xz39q0gzl6CQPiItq6oyHNe1WjODFFydgsIdt6vqPtO2BtD1YFMkmZHRcuBis6qZr6InhPkwC6s7zieEt-2F9UFAvr0XCUJnf4cU3Uzssg"/>
+</div>
+<div>
+<h5 class="font-label-lg text-label-lg text-on-surface">The Seventh Seal</h5>
+<p class="font-label-sm text-label-sm text-secondary">Ingmar Bergman</p>
+</div>
+</a>
+<a class="snap-start shrink-0 w-[280px] bg-[#1C1C1C] border border-white/10 rounded-lg p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors focus:ring-1 focus:ring-tertiary outline-none group" href="#">
+<div class="w-12 h-16 bg-surface-variant rounded overflow-hidden shrink-0">
+<img alt="Movie poster" class="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all" data-alt="vintage cinema film reel partially unspooled dramatic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcl0-h4BDPXzajVvVj85Z0DgqTppHbOA2HiwebeAg3Fo-P55j01L-lZiAmMEk-Vyjk2HmfOS2VgaJGGN5m-mTo6qB4yjnLQ22LQ-a9YcKcCfGTCSbwjlFqfHb8siDWJZ2seNr_f0LIo-zc0o0YpxpKLsseuJpGd9o5BIINpZnxpEe9Im__mdeTjqOs0TA1VMHI7G636faI7PrD4fG3UuYES4GD6rwcWPKJ0lEY5O-Njf4xtsPaDbKt9tStaKqtQ36eIjpLYAdemPc"/>
+</div>
+<div>
+<h5 class="font-label-lg text-label-lg text-on-surface">Bicycle Thieves</h5>
+<p class="font-label-sm text-label-sm text-secondary">Vittorio De Sica</p>
+</div>
+</a>
+<a class="snap-start shrink-0 w-[280px] bg-[#1C1C1C] border border-white/10 rounded-lg p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors focus:ring-1 focus:ring-tertiary outline-none group" href="#">
+<div class="w-12 h-16 bg-surface-variant rounded overflow-hidden shrink-0">
+<img alt="Movie poster" class="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all" data-alt="artistic shot of a camera lens reflecting light studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2Wlv7d4OYdxpknxPL_DQMsESLYRUkkAmfn4AMVlSC0MsuI__BVEXd4vrazcy_j7oal4hxqSpnIOZUoQ3hNRsuT5Zhh-efQLFHFhW53iQfIHEWsRqijORMuwqU1HbwGuBSu5N5bMTOr125I7sySLShOlaL9VsAc-aGkA53rb8F6yJhPMJRu20QGgRUcZsk-CjDe8E4FvkdN0981c3HOtAIxLp51JHtUPkjbQCdf8_xqR0B9B79UEbSa3wbW_w8s7brj6aX472XcFM"/>
+</div>
+<div>
+<h5 class="font-label-lg text-label-lg text-on-surface">Breathless</h5>
+<p class="font-label-sm text-label-sm text-secondary">Jean-Luc Godard</p>
+</div>
+</a>
+<a class="snap-start shrink-0 w-[280px] bg-[#1C1C1C] border border-white/10 rounded-lg p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors focus:ring-1 focus:ring-tertiary outline-none group" href="#">
+<div class="w-12 h-16 bg-surface-variant rounded overflow-hidden shrink-0">
+<img alt="Movie poster" class="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all" data-alt="interior of an old empty movie theater with red velvet seats fading into darkness" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCY_HZVvrSPXG0q2-IOlvbP8Ov1Qp-19fUbrkRU0q4_Ha14zAQ00a2fX30VqoFwXG6EtKgyKCBNE5gvV-T72AOwsPWopxHaziu8tjYwtMXKitbsTCSi8SKGXGEAh8t8SoH6JfJ7SNF1qfw2Kf4UGkkq6Ilrb_fcViLu1wdkrALRTlRR1og0x5Cb38BUVYDghs9kOcOscLbG25qa1zG1o-l-z8v-84Fdv9m9M0LiKbBCuNEyKid1YpB6aYb9AzQxe3668S5_C4Y3uKs"/>
+</div>
+<div>
+<h5 class="font-label-lg text-label-lg text-on-surface">Vertigo</h5>
+<p class="font-label-sm text-label-sm text-secondary">Alfred Hitchcock</p>
+</div>
+</a>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 border-t border-white/5 bg-black/90 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.5)] flex justify-around items-center h-20 px-4 pb-safe tonal layers with glassmorphism">
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-sky-300 transition-colors w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home">home</span>
+<span class="font-serif text-[10px] font-medium tracking-wide uppercase">Home</span>
+</a>
+<!-- Active State -->
+<a class="flex flex-col items-center justify-center text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)] hover:text-sky-300 Active: scale-110 duration-300 ease-out w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="explore" data-weight="fill">explore</span>
+<span class="font-serif text-[10px] font-medium tracking-wide uppercase">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-sky-300 transition-colors w-16" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="bookmarks">bookmarks</span>
+<span class="font-serif text-[10px] font-medium tracking-wide uppercase">Watchlist</span>
+</a>
+</nav>
+</body></html>
