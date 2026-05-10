@@ -25,9 +25,10 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
+      extendBodyBehindAppBar: true,
       body: CustomScrollView(
         slivers: [
-          // Transparent overlap so content scrolls under the glass header
+          // Glass header overlays the hero below it
           const SliverToBoxAdapter(child: _AppHeader()),
           SliverToBoxAdapter(child: _HeroSection(movie: featured)),
           SliverToBoxAdapter(
@@ -60,8 +61,7 @@ class _AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isWide = width >= _kBreakpoint;
+    final isWide = MediaQuery.sizeOf(context).width >= _kBreakpoint;
 
     return ClipRect(
       child: BackdropFilter(
@@ -84,11 +84,21 @@ class _AppHeader extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (isWide) ...[
-                    _HeaderLink(label: 'Home', isActive: true),
+                    _HeaderNavLink(
+                      label: 'Home',
+                      isActive: true,
+                      onTap: () => context.go('/'),
+                    ),
                     const SizedBox(width: 32),
-                    _HeaderLink(label: 'Explore'),
+                    _HeaderNavLink(
+                      label: 'Explore',
+                      onTap: () => context.go('/explore'),
+                    ),
                     const SizedBox(width: 32),
-                    _HeaderLink(label: 'Watchlist'),
+                    _HeaderNavLink(
+                      label: 'Watchlist',
+                      onTap: () => context.go('/profile'),
+                    ),
                     const SizedBox(width: 24),
                   ],
                   const _AvatarButton(),
@@ -102,19 +112,43 @@ class _AppHeader extends StatelessWidget {
   }
 }
 
-class _HeaderLink extends StatelessWidget {
-  const _HeaderLink({required this.label, this.isActive = false});
+class _HeaderNavLink extends StatefulWidget {
+  const _HeaderNavLink({
+    required this.label,
+    required this.onTap,
+    this.isActive = false,
+  });
+
   final String label;
   final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  State<_HeaderNavLink> createState() => _HeaderNavLinkState();
+}
+
+class _HeaderNavLinkState extends State<_HeaderNavLink> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: AppTextStyles.labelLg.copyWith(
-        color: isActive
-            ? AppColors.metallicBlueLight
-            : AppColors.onSurfaceVariant,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 150),
+          style: AppTextStyles.labelLg.copyWith(
+            color: widget.isActive
+                ? AppColors.metallicBlueLight
+                : _hovered
+                ? AppColors.onSurface
+                : AppColors.onSurfaceVariant,
+          ),
+          child: Text(widget.label),
+        ),
       ),
     );
   }
@@ -125,15 +159,21 @@ class _AvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.outlineVariant),
-        color: AppColors.surfaceContainerHigh,
+    return GestureDetector(
+      onTap: () => context.go('/profile'),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.outlineVariant),
+            color: AppColors.surfaceContainerHigh,
+          ),
+          child: const Icon(Icons.person, size: 18, color: AppColors.secondary),
+        ),
       ),
-      child: const Icon(Icons.person, size: 18, color: AppColors.secondary),
     );
   }
 }
@@ -334,7 +374,8 @@ class _HorizontalMovieList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 230,
+      // 260 px: ~210 px image (140 wide × 3/2 ratio) + 6 gap + ~44 px text
+      height: 260,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,

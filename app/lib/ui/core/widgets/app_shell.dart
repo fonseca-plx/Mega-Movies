@@ -10,7 +10,7 @@ const double _kBreakpoint = 600;
 /// Responsive navigation shell.
 ///
 /// - **Narrow (< 600 px)**: bottom navigation bar (mobile / portrait).
-/// - **Wide (≥ 600 px)**: side navigation rail (tablet / landscape / desktop).
+/// - **Wide (≥ 600 px)**: top navigation bar in a glass header — no side rail.
 ///
 /// Uses [LayoutBuilder] on `maxWidth` as recommended by the
 /// `flutter-build-responsive-layout` skill (never checks hardware type or
@@ -177,7 +177,7 @@ class _BottomNavItem extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Wide layout — navigation rail
+// Wide layout — top navigation bar only (no side rail)
 // ---------------------------------------------------------------------------
 
 class _WideLayout extends StatelessWidget {
@@ -197,112 +197,14 @@ class _WideLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: Row(
-        children: [
-          // Side rail
-          Container(
-            width: 72,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceContainerHighest,
-              border: Border(right: BorderSide(color: AppColors.glassBorder)),
-            ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  const SizedBox(height: 16),
-                  // Brand logo
-                  RotatedBox(
-                    quarterTurns: 3,
-                    child: Text(
-                      'MM',
-                      style: AppTextStyles.displayMd.copyWith(
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic,
-                        color: AppColors.gold,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  ...List.generate(items.length, (i) {
-                    final item = items[i];
-                    final active = currentIndex == i;
-                    return _RailItem(
-                      item: item,
-                      isActive: active,
-                      onTap: () => onTap(i),
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ),
-          // Content
-          Expanded(child: navigationShell),
-        ],
-      ),
+      body: navigationShell,
     );
   }
 }
 
-class _RailItem extends StatefulWidget {
-  const _RailItem({
-    required this.item,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  final _NavItem item;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  @override
-  State<_RailItem> createState() => _RailItemState();
-}
-
-class _RailItemState extends State<_RailItem> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: widget.isActive
-                ? AppColors.metallicBlueLight.withAlpha(26)
-                : _hovered
-                ? Colors.white.withAlpha(13)
-                : Colors.transparent,
-            boxShadow: widget.isActive
-                ? [
-                    BoxShadow(
-                      color: AppColors.metallicBlueLight.withAlpha(77),
-                      blurRadius: 8,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Icon(
-            widget.isActive ? widget.item.activeIcon : widget.item.icon,
-            size: 24,
-            color: widget.isActive
-                ? AppColors.metallicBlueLight
-                : AppColors.onSurfaceVariant,
-          ),
-        ),
-      ),
-    );
-  }
-}
+// ---------------------------------------------------------------------------
+// Data
+// ---------------------------------------------------------------------------
 
 class _NavItem {
   const _NavItem({
