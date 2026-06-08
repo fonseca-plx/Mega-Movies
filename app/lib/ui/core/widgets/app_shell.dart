@@ -195,10 +195,7 @@ class _WideLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: navigationShell,
-    );
+    return Scaffold(backgroundColor: AppColors.surface, body: navigationShell);
   }
 }
 

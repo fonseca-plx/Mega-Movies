@@ -3,9 +3,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mega_movies/data/models/movie.dart';
+import 'package:mega_movies/data/models/tmdb_search_result.dart';
 import 'package:mega_movies/data/repositories/movie_repository.dart';
 import 'package:mega_movies/ui/core/app_colors.dart';
 import 'package:mega_movies/ui/core/app_text_styles.dart';
+import 'package:mega_movies/ui/features/explore/view_models/explore_view_model.dart';
 
 const double _kMaxWidth = 1200;
 const double _kBreakpoint = 600;
@@ -20,26 +22,29 @@ class ExploreScreen extends StatefulWidget {
 class _ExploreScreenState extends State<ExploreScreen> {
   final _repo = MovieRepository();
   final _controller = TextEditingController();
-  List<Movie> _results = [];
+  late final ExploreViewModel _viewModel;
+  List<Movie> _trendingResults = [];
 
   @override
   void initState() {
     super.initState();
-    _results = _repo.getAll();
-    _controller.addListener(_onSearch);
+    _viewModel = ExploreViewModel(repository: _repo);
+    _viewModel.addListener(_onViewModelChanged);
+    _trendingResults = _repo.getAll();
   }
 
   @override
   void dispose() {
-    _controller
-      ..removeListener(_onSearch)
+    _viewModel
+      ..removeListener(_onViewModelChanged)
       ..dispose();
+    _controller.dispose();
     super.dispose();
   }
 
-  void _onSearch() {
-    setState(() => _results = _repo.search(_controller.text));
-  }
+  void _onViewModelChanged() => setState(() {});
+
+  void _onSearch(String query) => _viewModel.search(query);
 
   static const List<_Genre> _genres = [
     _Genre(
@@ -89,30 +94,40 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // Search bar
-                        _SearchBar(controller: _controller),
-                        const SizedBox(height: 32),
-                        // Genre bento grid
-                        Text('Explore Genres', style: AppTextStyles.headlineMd),
-                        const SizedBox(height: 16),
-                        _GenreBentoGrid(genres: _genres),
-                        const SizedBox(height: 32),
-                        // Trending row
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.trending_up,
-                              color: AppColors.tertiary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Trending Searches',
-                              style: AppTextStyles.headlineMd,
-                            ),
-                          ],
+                        // Search bar — onSubmitted triggers TMDB search
+                        _SearchBar(
+                          controller: _controller,
+                          onSubmitted: _onSearch,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 32),
+                        // Show search results when the user has searched,
+                        // otherwise show the default genres + trending sections.
+                        if (_viewModel.hasSearched) ...[
+                          _TmdbSearchResults(viewModel: _viewModel),
+                        ] else ...[
+                          Text(
+                            'Explore Genres',
+                            style: AppTextStyles.headlineMd,
+                          ),
+                          const SizedBox(height: 16),
+                          _GenreBentoGrid(genres: _genres),
+                          const SizedBox(height: 32),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.trending_up,
+                                color: AppColors.tertiary,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Trending Searches',
+                                style: AppTextStyles.headlineMd,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                       ],
                     ),
                   ),
@@ -120,50 +135,60 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
             ),
           ),
-          // Trending horizontal list
-          SliverToBoxAdapter(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _kMaxWidth),
-                child: SizedBox(
-                  height: 80,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _results.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 12),
-                    itemBuilder: (context, i) =>
-                        _TrendingCard(movie: _results[i]),
+          // Trending horizontal list — only shown when not searching
+          if (!_viewModel.hasSearched)
+            SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: _kMaxWidth),
+                  child: SizedBox(
+                    height: 80,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _trendingResults.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 12),
+                      itemBuilder: (context, i) =>
+                          _TrendingCard(movie: _trendingResults[i]),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          // Results grid
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 96),
-            sliver: SliverGrid(
-              delegate: SliverChildBuilderDelegate(
-                (context, i) => _GridMovieTile(movie: _results[i]),
-                childCount: _results.length,
-              ),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 200,
-                childAspectRatio: 2 / 3,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
+          // Mock grid — only shown when not searching
+          if (!_viewModel.hasSearched)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 96),
+              sliver: SliverGrid(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => _GridMovieTile(movie: _trendingResults[i]),
+                  childCount: _trendingResults.length,
+                ),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 200,
+                  childAspectRatio: 2 / 3,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                ),
               ),
             ),
-          ),
+          // Bottom padding so FAB doesn't overlap last item
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
       ),
     );
   }
 }
 
+// ---------------------------------------------------------------------------
+// Search bar
+// ---------------------------------------------------------------------------
+
 class _SearchBar extends StatelessWidget {
-  const _SearchBar({required this.controller});
+  const _SearchBar({required this.controller, required this.onSubmitted});
+
   final TextEditingController controller;
+  final ValueChanged<String> onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -174,8 +199,10 @@ class _SearchBar extends StatelessWidget {
         child: TextField(
           controller: controller,
           style: AppTextStyles.bodyMd,
+          textInputAction: TextInputAction.search,
+          onSubmitted: onSubmitted,
           decoration: InputDecoration(
-            hintText: 'Search by title, director, or genre…',
+            hintText: 'Pesquise por título, diretor ou gênero…',
             prefixIcon: const Icon(
               Icons.search,
               color: AppColors.onSurfaceVariant,
@@ -196,6 +223,300 @@ class _SearchBar extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// TMDB search results section
+// ---------------------------------------------------------------------------
+
+class _TmdbSearchResults extends StatelessWidget {
+  const _TmdbSearchResults({required this.viewModel});
+
+  final ExploreViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    if (viewModel.isLoading) {
+      return const _LoadingState();
+    }
+
+    if (viewModel.errorMessage != null) {
+      return _ErrorState(message: viewModel.errorMessage!);
+    }
+
+    if (viewModel.searchResults.isEmpty) {
+      return const _EmptyState();
+    }
+
+    return _SearchResultsGrid(results: viewModel.searchResults);
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 64),
+      child: Center(
+        child: CircularProgressIndicator(color: AppColors.gold, strokeWidth: 2),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.wifi_off_rounded,
+              color: AppColors.onSurfaceVariant,
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.movie_filter_outlined,
+              color: AppColors.onSurfaceVariant,
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nenhum filme encontrado.',
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tente um título diferente.',
+              style: AppTextStyles.labelSm.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchResultsGrid extends StatelessWidget {
+  const _SearchResultsGrid({required this.results});
+
+  final List<TmdbSearchResult> results;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.video_library_outlined,
+              color: AppColors.tertiary,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text('Resultados', style: AppTextStyles.headlineMd),
+            const SizedBox(width: 8),
+            Text(
+              '(${results.length})',
+              style: AppTextStyles.labelSm.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: results.length,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 200,
+            childAspectRatio: 2 / 3,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+          ),
+          itemBuilder: (context, i) => _TmdbMovieTile(result: results[i]),
+        ),
+        const SizedBox(height: 96),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// TMDB movie tile (poster + title)
+// ---------------------------------------------------------------------------
+
+class _TmdbMovieTile extends StatefulWidget {
+  const _TmdbMovieTile({required this.result});
+
+  final TmdbSearchResult result;
+
+  @override
+  State<_TmdbMovieTile> createState() => _TmdbMovieTileState();
+}
+
+class _TmdbMovieTileState extends State<_TmdbMovieTile> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final posterUrl = widget.result.posterUrl('w342');
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: _hovered
+              ? [BoxShadow(color: AppColors.gold.withAlpha(77), blurRadius: 15)]
+              : null,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Poster image
+              posterUrl != null
+                  ? Image.network(
+                      posterUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) =>
+                          _PosterFallback(title: widget.result.title),
+                    )
+                  : _PosterFallback(title: widget.result.title),
+              // Gradient overlay for title legibility
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(8, 24, 8, 8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black.withAlpha(230)],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.result.title,
+                        style: AppTextStyles.labelLg.copyWith(
+                          color: AppColors.onSurface,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (widget.result.year != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '${widget.result.year}',
+                          style: AppTextStyles.labelSm.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Fallback widget shown when a poster image is unavailable.
+class _PosterFallback extends StatelessWidget {
+  const _PosterFallback({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.graphite,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.movie_outlined,
+                color: AppColors.onSurfaceVariant,
+                size: 32,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: AppTextStyles.labelSm.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Genre bento grid (unchanged)
+// ---------------------------------------------------------------------------
 
 class _GenreBentoGrid extends StatelessWidget {
   const _GenreBentoGrid({required this.genres});
@@ -288,6 +609,10 @@ class _GenreCardState extends State<_GenreCard> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Trending card (unchanged)
+// ---------------------------------------------------------------------------
+
 class _TrendingCard extends StatelessWidget {
   const _TrendingCard({required this.movie});
   final Movie movie;
@@ -347,6 +672,10 @@ class _TrendingCard extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Mock grid tile (unchanged)
+// ---------------------------------------------------------------------------
+
 class _GridMovieTile extends StatefulWidget {
   const _GridMovieTile({required this.movie});
   final Movie movie;
@@ -392,6 +721,10 @@ class _GridMovieTileState extends State<_GridMovieTile> {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Genre data class
+// ---------------------------------------------------------------------------
 
 class _Genre {
   const _Genre({required this.label, required this.imageUrl});
