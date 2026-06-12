@@ -3,9 +3,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mega_movies/data/models/movie.dart';
-import 'package:mega_movies/data/repositories/movie_repository.dart';
 import 'package:mega_movies/ui/core/app_colors.dart';
 import 'package:mega_movies/ui/core/app_text_styles.dart';
+import 'package:mega_movies/ui/features/explore/view_models/explore_view_model.dart';
+import 'package:provider/provider.dart';
 
 const double _kMaxWidth = 1200;
 const double _kBreakpoint = 600;
@@ -17,15 +18,16 @@ class ExploreScreen extends StatefulWidget {
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
+/// Hosts the [TextEditingController] whose lifetime is tied to the screen.
+///
+/// Search results live in [ExploreViewModel]; only the controller (a UI
+/// concern) remains in local state.
 class _ExploreScreenState extends State<ExploreScreen> {
-  final _repo = MovieRepository();
   final _controller = TextEditingController();
-  List<Movie> _results = [];
 
   @override
   void initState() {
     super.initState();
-    _results = _repo.getAll();
     _controller.addListener(_onSearch);
   }
 
@@ -38,7 +40,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   void _onSearch() {
-    setState(() => _results = _repo.search(_controller.text));
+    context.read<ExploreViewModel>().search(_controller.text);
   }
 
   static const List<_Genre> _genres = [
@@ -66,6 +68,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final results = context.watch<ExploreViewModel>().results;
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: CustomScrollView(
@@ -130,10 +134,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     scrollDirection: Axis.horizontal,
-                    itemCount: _results.length,
+                    itemCount: results.length,
                     separatorBuilder: (_, _) => const SizedBox(width: 12),
                     itemBuilder: (context, i) =>
-                        _TrendingCard(movie: _results[i]),
+                        _TrendingCard(movie: results[i]),
                   ),
                 ),
               ),
@@ -144,8 +148,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
             padding: const EdgeInsets.fromLTRB(24, 32, 24, 96),
             sliver: SliverGrid(
               delegate: SliverChildBuilderDelegate(
-                (context, i) => _GridMovieTile(movie: _results[i]),
-                childCount: _results.length,
+                (context, i) => _GridMovieTile(movie: results[i]),
+                childCount: results.length,
               ),
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: 200,
