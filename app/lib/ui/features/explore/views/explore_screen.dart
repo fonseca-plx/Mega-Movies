@@ -406,68 +406,79 @@ class _TmdbMovieTileState extends State<_TmdbMovieTile> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: _hovered
-              ? [BoxShadow(color: AppColors.gold.withAlpha(77), blurRadius: 15)]
-              : null,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Poster image
-              posterUrl != null
-                  ? Image.network(
-                      posterUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          _PosterFallback(title: widget.result.title),
-                    )
-                  : _PosterFallback(title: widget.result.title),
-              // Gradient overlay for title legibility
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(8, 24, 8, 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, Colors.black.withAlpha(230)],
+      child: GestureDetector(
+        onTap: () => context.push('/tmdb/${widget.result.id}'),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: _hovered
+                ? [
+                    BoxShadow(
+                      color: AppColors.gold.withAlpha(77),
+                      blurRadius: 15,
+                    ),
+                  ]
+                : null,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Poster image
+                posterUrl != null
+                    ? Image.network(
+                        posterUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            _PosterFallback(title: widget.result.title),
+                      )
+                    : _PosterFallback(title: widget.result.title),
+                // Gradient overlay for title legibility
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(8, 24, 8, 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withAlpha(230),
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          widget.result.title,
+                          style: AppTextStyles.labelLg.copyWith(
+                            color: AppColors.onSurface,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (widget.result.year != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            '${widget.result.year}',
+                            style: AppTextStyles.labelSm.copyWith(
+                              color: AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.result.title,
-                        style: AppTextStyles.labelLg.copyWith(
-                          color: AppColors.onSurface,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (widget.result.year != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          '${widget.result.year}',
-                          style: AppTextStyles.labelSm.copyWith(
-                            color: AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

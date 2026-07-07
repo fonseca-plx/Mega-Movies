@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:http/http.dart' as http;
+import 'package:mega_movies/data/models/tmdb_movie_details.dart';
 import 'package:mega_movies/data/models/tmdb_search_result.dart';
 
 /// Exception thrown when the TMDB API returns an unexpected status code.
@@ -61,5 +62,28 @@ class TmdbMovieService {
         .whereType<Map<String, dynamic>>()
         .map(TmdbSearchResult.fromJson)
         .toList();
+  }
+
+  /// Fetches the full details of a single movie by its TMDB [id].
+  ///
+  /// Throws [TmdbException] on HTTP errors.
+  Future<TmdbMovieDetails> getMovieDetails(int id) async {
+    final uri = Uri.parse(
+      '$_baseUrl/movie/$id',
+    ).replace(queryParameters: {'api_key': _apiKey, 'language': 'pt-BR'});
+
+    log('TMDB details: $id', name: 'TmdbMovieService');
+
+    final response = await _client.get(uri);
+
+    if (response.statusCode != 200) {
+      throw TmdbException(
+        response.statusCode,
+        'Failed to fetch details for movie $id',
+      );
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return TmdbMovieDetails.fromJson(body);
   }
 }

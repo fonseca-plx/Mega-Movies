@@ -73,8 +73,10 @@ class _MovieCardState extends State<MovieCard>
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: AspectRatio(
-                      aspectRatio: 2 / 3,
+                    // Fixed height avoids overflow inside a bounded parent.
+                    child: SizedBox(
+                      height: 180,
+                      width: 140,
                       child: Image.network(
                         widget.movie.posterUrl,
                         fit: BoxFit.cover,
