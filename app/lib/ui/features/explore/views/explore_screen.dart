@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mega_movies/data/models/movie.dart';
+import 'package:mega_movies/data/models/tmdb_genre.dart';
 import 'package:mega_movies/data/models/tmdb_search_result.dart';
 import 'package:mega_movies/data/repositories/movie_repository.dart';
 import 'package:mega_movies/ui/core/app_colors.dart';
@@ -12,6 +12,20 @@ import 'package:mega_movies/ui/features/explore/view_models/explore_view_model.d
 const double _kMaxWidth = 1200;
 const double _kBreakpoint = 600;
 
+/// Featured genre IDs (TMDB) shown in the genre bento grid.
+///
+/// Each entry maps a display label to its TMDB genre ID.
+const List<({String label, int id})> _kFeaturedGenres = [
+  (label: 'Crime', id: 80),
+  (label: 'Drama', id: 18),
+  (label: 'Ficção Científica', id: 878),
+  (label: 'Thriller', id: 53),
+  (label: 'Ação', id: 28),
+  (label: 'Animação', id: 16),
+  (label: 'Comédia', id: 35),
+  (label: 'Terror', id: 27),
+];
+
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
 
@@ -20,17 +34,15 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class _ExploreScreenState extends State<ExploreScreen> {
-  final _repo = MovieRepository();
   final _controller = TextEditingController();
   late final ExploreViewModel _viewModel;
-  List<Movie> _trendingResults = [];
 
   @override
   void initState() {
     super.initState();
-    _viewModel = ExploreViewModel(repository: _repo);
+    _viewModel = ExploreViewModel(repository: MovieRepository());
     _viewModel.addListener(_onViewModelChanged);
-    _trendingResults = _repo.getAll();
+    _viewModel.loadDefaultContent();
   }
 
   @override
@@ -45,29 +57,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
   void _onViewModelChanged() => setState(() {});
 
   void _onSearch(String query) => _viewModel.search(query);
-
-  static const List<_Genre> _genres = [
-    _Genre(
-      label: 'Film Noir',
-      imageUrl:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDh2FI4s1aMNH_5WNQaHZxki-vpETDyF_BKbzzrAY1IH_C_firKJoIWRK8TB9YROElplLh146aAbstZlELGdKGkuHMAVzcsRXLbGFjFhn1WKEvlkg4B3s-HJJYsWHNbl4gAeu0h5kvJQZRlKS5ld2cbygt92ZGP_QFA1K4oyV6Jz21bZeOAs8DyB1lQ0RtJ5vu7KxyrEz29YmjUtS4NIzsk_FknMCg9TwmkgKGSErQuAK4-Zs_amMPM6ojQuBTsu1PUVe8NXbvBdsrI',
-    ),
-    _Genre(
-      label: 'Classic Hollywood',
-      imageUrl:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuAmNTQlSR-dVEqVqNcsn1JsvdZmlfViqBaD_BpnfsxoNvB8L6QslNyeZzpLSBFiuUMUGmiyJ9NfCDwuW_W2lMUuMB1t8-iauQYzuSAw2hiPPYeiaZ62R6qV5XsD_73WT88AwkV1kjQgA_Whg1oqIBYv5rNIeiTAUvWEZglBAxEdzXRrrSJnuGhdjJSClBMusWED4p5DMKh0g9tzeHxBY3LaAQUAQyehJNcTzlE93q0mzIUqdXa_W5nOtD9nvSwmVnHUeZgxFtFlhCE',
-    ),
-    _Genre(
-      label: 'French New Wave',
-      imageUrl:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuC_1iVTGPVZXcb7B8VrVTPQWGyi8FW4nxetpfvKqWxf1rfqeDpYxoXB_3sobg7-HexQJlm4O4G8hmsg73NSldyh1t91URI0JQ6CuTNj12X6kOwN-Loc5RO6h1avyAzO0cSXiKrdi_1eaoJmZqSAg-auxniWvfV0GbbJSoe61y9OsLJaYcGJRVNzdaM-4IZotL3V-woDylviF4IKHokEf3ZHdW-J3aZOhdmLCvSE9RIzoHeKo-GLHRfA8qrBlfTbH5TFfu3fthEHD2E',
-    ),
-    _Genre(
-      label: 'Sci-Fi Visionaries',
-      imageUrl:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDFHy3AftgrqkmknPsFdjx049Zm4TTIn08zOhWJP6yXULvjMT2HBYI8i-Oqoy5eg0sgKThryjabX-mocTeZYoLPq9sT3Awm5vRuVbYeSkH4ZvQc4shXFaWiVoO8ruXnuSOqN5HA0c5QAiPr3yAI6TnrMro_Oys327YUQSXx3ZoNdAAKRZw2_qz1PzzzCgOj2oalTzuTHZPZBWkFr_2gOw_ZiJTxbtLS7Rino-0xv1nmXjhHvKd4mQLbFytUuDoqcvWyGgiGDh0vaD8',
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +75,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Title
                         Center(
                           child: Text(
                             'Discover Cinema',
@@ -94,14 +82,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // Search bar — onSubmitted triggers TMDB search
                         _SearchBar(
                           controller: _controller,
                           onSubmitted: _onSearch,
                         ),
                         const SizedBox(height: 32),
-                        // Show search results when the user has searched,
-                        // otherwise show the default genres + trending sections.
                         if (_viewModel.hasSearched) ...[
                           _TmdbSearchResults(viewModel: _viewModel),
                         ] else ...[
@@ -110,7 +95,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             style: AppTextStyles.headlineMd,
                           ),
                           const SizedBox(height: 16),
-                          _GenreBentoGrid(genres: _genres),
+                          _GenreGrid(
+                            featuredGenres: _kFeaturedGenres,
+                            allGenres: _viewModel.genres,
+                            isLoading: _viewModel.isLoadingDefault,
+                          ),
                           const SizedBox(height: 32),
                           Row(
                             children: [
@@ -121,7 +110,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Trending Searches',
+                                'Em Alta Esta Semana',
                                 style: AppTextStyles.headlineMd,
                               ),
                             ],
@@ -135,44 +124,69 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
             ),
           ),
-          // Trending horizontal list — only shown when not searching
+
+          // Trending horizontal list — only when not searching
           if (!_viewModel.hasSearched)
             SliverToBoxAdapter(
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: _kMaxWidth),
-                  child: SizedBox(
-                    height: 80,
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _trendingResults.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 12),
-                      itemBuilder: (context, i) =>
-                          _TrendingCard(movie: _trendingResults[i]),
+                  child: _viewModel.isLoadingDefault
+                      ? const _TrendingSkeletonRow()
+                      : SizedBox(
+                          height: 80,
+                          child: ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _viewModel.trendingMovies.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 12),
+                            itemBuilder: (context, i) => _TrendingChip(
+                              movie: _viewModel.trendingMovies[i],
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+
+          // Popular movies grid — only when not searching
+          if (!_viewModel.hasSearched)
+            _viewModel.isLoadingDefault
+                ? SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 96),
+                    sliver: SliverGrid(
+                      delegate: SliverChildBuilderDelegate(
+                        (_, _) => const _SkeletonTile(),
+                        childCount: 12,
+                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 200,
+                            childAspectRatio: 2 / 3,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                          ),
+                    ),
+                  )
+                : SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 96),
+                    sliver: SliverGrid(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, i) =>
+                            _TmdbMovieTile(result: _viewModel.popularMovies[i]),
+                        childCount: _viewModel.popularMovies.length,
+                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 200,
+                            childAspectRatio: 2 / 3,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                          ),
                     ),
                   ),
-                ),
-              ),
-            ),
-          // Mock grid — only shown when not searching
-          if (!_viewModel.hasSearched)
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 96),
-              sliver: SliverGrid(
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) => _GridMovieTile(movie: _trendingResults[i]),
-                  childCount: _trendingResults.length,
-                ),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 200,
-                  childAspectRatio: 2 / 3,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                ),
-              ),
-            ),
-          // Bottom padding so FAB doesn't overlap last item
+
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
       ),
@@ -198,24 +212,43 @@ class _SearchBar extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: TextField(
           controller: controller,
-          style: AppTextStyles.bodyMd,
-          textInputAction: TextInputAction.search,
           onSubmitted: onSubmitted,
+          style: AppTextStyles.bodyLg,
           decoration: InputDecoration(
-            hintText: 'Pesquise por título, diretor ou gênero…',
+            hintText: 'Search films, directors, genres…',
+            hintStyle: AppTextStyles.bodyLg.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
             prefixIcon: const Icon(
               Icons.search,
               color: AppColors.onSurfaceVariant,
             ),
+            suffixIcon: ValueListenableBuilder(
+              valueListenable: controller,
+              builder: (context, value, _) => value.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      color: AppColors.onSurfaceVariant,
+                      onPressed: () {
+                        controller.clear();
+                        onSubmitted('');
+                      },
+                    )
+                  : const SizedBox.shrink(),
+            ),
             filled: true,
-            fillColor: AppColors.graphite,
+            fillColor: AppColors.glassPanel,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: AppColors.glassBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.glassBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.metallicBlueDark),
+              borderSide: BorderSide(color: AppColors.tertiary, width: 1.5),
             ),
           ),
         ),
@@ -225,7 +258,7 @@ class _SearchBar extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// TMDB search results section
+// Search results
 // ---------------------------------------------------------------------------
 
 class _TmdbSearchResults extends StatelessWidget {
@@ -236,102 +269,76 @@ class _TmdbSearchResults extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (viewModel.isLoading) {
-      return const _LoadingState();
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 48),
+          child: CircularProgressIndicator(
+            color: AppColors.gold,
+            strokeWidth: 2,
+          ),
+        ),
+      );
     }
 
     if (viewModel.errorMessage != null) {
-      return _ErrorState(message: viewModel.errorMessage!);
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 48),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.wifi_off_outlined,
+                color: AppColors.onSurfaceVariant,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                viewModel.errorMessage!,
+                style: AppTextStyles.bodyMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     if (viewModel.searchResults.isEmpty) {
-      return const _EmptyState();
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 48),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.search_off,
+                color: AppColors.onSurfaceVariant,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Nenhum filme encontrado.',
+                style: AppTextStyles.bodyMd.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tente um título diferente.',
+                style: AppTextStyles.labelSm.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return _SearchResultsGrid(results: viewModel.searchResults);
-  }
-}
-
-class _LoadingState extends StatelessWidget {
-  const _LoadingState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 64),
-      child: Center(
-        child: CircularProgressIndicator(color: AppColors.gold, strokeWidth: 2),
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.wifi_off_rounded,
-              color: AppColors.onSurfaceVariant,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.movie_filter_outlined,
-              color: AppColors.onSurfaceVariant,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Nenhum filme encontrado.',
-              style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Tente um título diferente.',
-              style: AppTextStyles.labelSm.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -383,7 +390,278 @@ class _SearchResultsGrid extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// TMDB movie tile (poster + title)
+// Genre grid with real posters
+// ---------------------------------------------------------------------------
+
+class _GenreGrid extends StatelessWidget {
+  const _GenreGrid({
+    required this.featuredGenres,
+    required this.allGenres,
+    required this.isLoading,
+  });
+
+  final List<({String label, int id})> featuredGenres;
+  final List<TmdbGenre> allGenres;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width >= _kBreakpoint;
+    final crossAxisCount = isWide ? 4 : 2;
+
+    if (isLoading) {
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 16 / 9,
+        ),
+        itemCount: featuredGenres.length,
+        itemBuilder: (_, _) => ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: const _SkeletonTile(),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 16 / 9,
+      ),
+      itemCount: featuredGenres.length,
+      itemBuilder: (context, i) {
+        final g = featuredGenres[i];
+        return _GenreCard(label: g.label, genreId: g.id);
+      },
+    );
+  }
+}
+
+/// Genre card that lazily loads its backdrop from TMDB.
+class _GenreCard extends StatefulWidget {
+  const _GenreCard({required this.label, required this.genreId});
+
+  final String label;
+  final int genreId;
+
+  @override
+  State<_GenreCard> createState() => _GenreCardState();
+}
+
+class _GenreCardState extends State<_GenreCard> {
+  bool _hovered = false;
+  String? _backdropUrl;
+  bool _imageLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBackdrop();
+  }
+
+  Future<void> _loadBackdrop() async {
+    try {
+      final repo = MovieRepository();
+      final movies = await repo.discoverByGenres(
+        [widget.genreId],
+        sortBy: 'popularity.desc',
+        limit: 1,
+      );
+      if (mounted && movies.isNotEmpty && movies.first.backdropPath != null) {
+        setState(() {
+          _backdropUrl = movies.first.backdropUrl('w780');
+          _imageLoaded = true;
+        });
+      }
+    } catch (_) {
+      // Silent failure — card keeps the gradient fallback.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => context.push(
+          '/explore/genre/${widget.genreId}?label=${Uri.encodeComponent(widget.label)}',
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              color: AppColors.graphite,
+              boxShadow: _hovered
+                  ? [
+                      BoxShadow(
+                        color: AppColors.gold.withAlpha(50),
+                        blurRadius: 12,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (_imageLoaded && _backdropUrl != null)
+                  AnimatedOpacity(
+                    opacity: 1,
+                    duration: const Duration(milliseconds: 400),
+                    child: AnimatedScale(
+                      scale: _hovered ? 1.05 : 1.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: Image.network(
+                        _backdropUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
+                // Gradient overlay
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x44000000), Color(0xCC000000)],
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    widget.label,
+                    style: AppTextStyles.headlineMd.copyWith(fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Trending chip (compact horizontal tile)
+// ---------------------------------------------------------------------------
+
+class _TrendingChip extends StatefulWidget {
+  const _TrendingChip({required this.movie});
+
+  final TmdbSearchResult movie;
+
+  @override
+  State<_TrendingChip> createState() => _TrendingChipState();
+}
+
+class _TrendingChipState extends State<_TrendingChip> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => context.push('/tmdb/${widget.movie.id}'),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: _hovered
+                ? AppColors.surfaceContainerHigh
+                : AppColors.glassPanel,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: _hovered ? AppColors.tertiary : AppColors.glassBorder,
+            ),
+            boxShadow: _hovered
+                ? [
+                    BoxShadow(
+                      color: AppColors.tertiary.withAlpha(40),
+                      blurRadius: 10,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.local_fire_department,
+                color: AppColors.tertiary,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                widget.movie.title,
+                style: AppTextStyles.labelLg.copyWith(
+                  color: _hovered
+                      ? AppColors.onSurface
+                      : AppColors.onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TrendingSkeletonRow extends StatelessWidget {
+  const _TrendingSkeletonRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 80,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        scrollDirection: Axis.horizontal,
+        itemCount: 8,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (_, _) => const _SkeletonChip(),
+      ),
+    );
+  }
+}
+
+class _SkeletonChip extends StatelessWidget {
+  const _SkeletonChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 140,
+      height: 40,
+      margin: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: AppColors.graphite,
+        borderRadius: BorderRadius.circular(999),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// TMDB movie tile (poster + overlay)
 // ---------------------------------------------------------------------------
 
 class _TmdbMovieTile extends StatefulWidget {
@@ -426,7 +704,6 @@ class _TmdbMovieTileState extends State<_TmdbMovieTile> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Poster image
                 posterUrl != null
                     ? Image.network(
                         posterUrl,
@@ -498,7 +775,7 @@ class _PosterFallback extends StatelessWidget {
       color: AppColors.graphite,
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -526,219 +803,19 @@ class _PosterFallback extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Genre bento grid (unchanged)
+// Skeleton tile for grids
 // ---------------------------------------------------------------------------
 
-class _GenreBentoGrid extends StatelessWidget {
-  const _GenreBentoGrid({required this.genres});
-  final List<_Genre> genres;
+class _SkeletonTile extends StatelessWidget {
+  const _SkeletonTile();
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.sizeOf(context).width >= _kBreakpoint;
-    final cols = isWide ? 4 : 2;
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: genres.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: cols,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: isWide ? 1 : 4 / 3,
-      ),
-      itemBuilder: (context, i) => _GenreCard(genre: genres[i]),
-    );
-  }
-}
-
-class _GenreCard extends StatefulWidget {
-  const _GenreCard({required this.genre});
-  final _Genre genre;
-
-  @override
-  State<_GenreCard> createState() => _GenreCardState();
-}
-
-class _GenreCardState extends State<_GenreCard> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            AnimatedScale(
-              scale: _hovered ? 1.05 : 1.0,
-              duration: const Duration(milliseconds: 400),
-              child: Image.network(
-                widget.genre.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Container(color: AppColors.graphite),
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withAlpha(_hovered ? 179 : 230),
-                  ],
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 12,
-              left: 12,
-              right: 12,
-              child: Text(
-                widget.genre.label,
-                style: AppTextStyles.headlineMd.copyWith(
-                  color: _hovered ? AppColors.tertiary : AppColors.onSurface,
-                ),
-              ),
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.glassBorder),
-              ),
-            ),
-          ],
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.graphite,
+        borderRadius: BorderRadius.circular(8),
       ),
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// Trending card (unchanged)
-// ---------------------------------------------------------------------------
-
-class _TrendingCard extends StatelessWidget {
-  const _TrendingCard({required this.movie});
-  final Movie movie;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('/movie/${movie.id}'),
-      child: Container(
-        width: 280,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.graphite,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.glassBorder),
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: SizedBox(
-                width: 36,
-                height: 52,
-                child: Image.network(
-                  movie.posterUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) =>
-                      Container(color: AppColors.surfaceVariant),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    movie.title,
-                    style: AppTextStyles.labelLg,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    movie.director,
-                    style: AppTextStyles.labelSm.copyWith(
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Mock grid tile (unchanged)
-// ---------------------------------------------------------------------------
-
-class _GridMovieTile extends StatefulWidget {
-  const _GridMovieTile({required this.movie});
-  final Movie movie;
-
-  @override
-  State<_GridMovieTile> createState() => _GridMovieTileState();
-}
-
-class _GridMovieTileState extends State<_GridMovieTile> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => context.push('/movie/${widget.movie.id}'),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: _hovered
-                ? [
-                    BoxShadow(
-                      color: AppColors.gold.withAlpha(77),
-                      blurRadius: 15,
-                    ),
-                  ]
-                : null,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              widget.movie.posterUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(color: AppColors.graphite),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Genre data class
-// ---------------------------------------------------------------------------
-
-class _Genre {
-  const _Genre({required this.label, required this.imageUrl});
-  final String label;
-  final String imageUrl;
 }

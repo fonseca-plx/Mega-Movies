@@ -8,7 +8,6 @@ import 'package:mega_movies/ui/core/app_colors.dart';
 import 'package:mega_movies/ui/core/app_text_styles.dart';
 import 'package:mega_movies/ui/core/widgets/app_button.dart';
 import 'package:mega_movies/ui/core/widgets/glass_chip.dart';
-import 'package:mega_movies/ui/core/widgets/movie_card.dart';
 
 const double _kMaxWidth = 1200;
 
@@ -37,7 +36,6 @@ class _MovieDetailsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final heroHeight = (size.height * 0.55).clamp(300.0, 620.0);
-    final similar = MovieRepository().similarTo;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -76,22 +74,6 @@ class _MovieDetailsView extends StatelessWidget {
                         _CastRow(cast: movie.cast),
                         const SizedBox(height: 48),
                       ],
-                      // Similar
-                      Text('Similar Classics', style: AppTextStyles.headlineMd),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        height: 230,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: similar.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 16),
-                          itemBuilder: (context, i) => MovieCard(
-                            movie: similar[i],
-                            onTap: () =>
-                                context.push('/movie/${similar[i].id}'),
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 96),
                     ],
                   ),

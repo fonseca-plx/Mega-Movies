@@ -2,7 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mega_movies/data/models/tmdb_cast_member.dart';
 import 'package:mega_movies/data/models/tmdb_movie_details.dart';
+import 'package:mega_movies/data/models/tmdb_search_result.dart';
+import 'package:mega_movies/data/repositories/movie_repository.dart';
 import 'package:mega_movies/data/services/tmdb_movie_service.dart';
 import 'package:mega_movies/ui/core/app_colors.dart';
 import 'package:mega_movies/ui/core/app_text_styles.dart';
@@ -13,7 +16,7 @@ const double _kMaxWidth = 1200;
 
 /// Full-screen details page for a TMDB movie.
 ///
-/// Fetches movie data from the TMDB API using the numeric [tmdbId] parameter.
+/// Fetches movie details (with cast) and recommendations in parallel.
 class TmdbMovieDetailsScreen extends StatefulWidget {
   const TmdbMovieDetailsScreen({super.key, required this.tmdbId});
 
@@ -24,22 +27,34 @@ class TmdbMovieDetailsScreen extends StatefulWidget {
 }
 
 class _TmdbMovieDetailsScreenState extends State<TmdbMovieDetailsScreen> {
-  final _service = TmdbMovieService();
+  final _repo = MovieRepository();
 
   TmdbMovieDetails? _details;
+  List<TmdbSearchResult> _recommendations = [];
   bool _isLoading = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _fetchDetails();
+    _fetchAll();
   }
 
-  Future<void> _fetchDetails() async {
+  Future<void> _fetchAll() async {
     try {
-      final details = await _service.getMovieDetails(widget.tmdbId);
-      if (mounted) setState(() => _details = details);
+      final results = await Future.wait([
+        _repo.getMovieDetails(widget.tmdbId),
+        _repo.getRecommendations(widget.tmdbId),
+      ]);
+      if (mounted) {
+        setState(() {
+          _details = results[0] as TmdbMovieDetails;
+          _recommendations = (results[1] as List<TmdbSearchResult>)
+              .where((m) => m.posterPath != null)
+              .take(10)
+              .toList();
+        });
+      }
     } on TmdbException catch (e) {
       if (mounted) {
         setState(
@@ -61,7 +76,7 @@ class _TmdbMovieDetailsScreenState extends State<TmdbMovieDetailsScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) return const _LoadingScaffold();
     if (_errorMessage != null) return _ErrorScaffold(message: _errorMessage!);
-    return _DetailsView(movie: _details!);
+    return _DetailsView(movie: _details!, recommendations: _recommendations);
   }
 }
 
@@ -137,9 +152,10 @@ class _ErrorScaffold extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _DetailsView extends StatelessWidget {
-  const _DetailsView({required this.movie});
+  const _DetailsView({required this.movie, required this.recommendations});
 
   final TmdbMovieDetails movie;
+  final List<TmdbSearchResult> recommendations;
 
   @override
   Widget build(BuildContext context) {
@@ -186,6 +202,21 @@ class _DetailsView extends StatelessWidget {
                           color: AppColors.onSurfaceVariant,
                         ),
                       ),
+                      if (movie.credits.isNotEmpty) ...[
+                        const SizedBox(height: 32),
+                        Text('Elenco', style: AppTextStyles.headlineMd),
+                        const SizedBox(height: 16),
+                        _CastRow(cast: movie.credits),
+                      ],
+                      if (recommendations.isNotEmpty) ...[
+                        const SizedBox(height: 32),
+                        Text(
+                          'Você Também Pode Gostar',
+                          style: AppTextStyles.headlineMd,
+                        ),
+                        const SizedBox(height: 16),
+                        _RecommendationsRow(movies: recommendations),
+                      ],
                       const SizedBox(height: 96),
                     ],
                   ),
@@ -200,7 +231,7 @@ class _DetailsView extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Hero section (backdrop + metadata)
+// Hero section
 // ---------------------------------------------------------------------------
 
 class _Hero extends StatelessWidget {
@@ -218,7 +249,6 @@ class _Hero extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Backdrop
           if (backdropUrl != null)
             Image.network(
               backdropUrl,
@@ -227,7 +257,6 @@ class _Hero extends StatelessWidget {
             )
           else
             Container(color: AppColors.graphite),
-          // 15% safe-zone gradient (DESIGN.md requirement)
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -242,7 +271,6 @@ class _Hero extends StatelessWidget {
               ),
             ),
           ),
-          // Back button
           Positioned(
             top: 0,
             left: 0,
@@ -263,7 +291,6 @@ class _Hero extends StatelessWidget {
               ),
             ),
           ),
-          // Metadata pinned to bottom
           Positioned(
             bottom: 0,
             left: 24,
@@ -276,6 +303,7 @@ class _Hero extends StatelessWidget {
                   Wrap(
                     spacing: 8,
                     children: movie.genres
+                        .take(3)
                         .map((g) => GlassChip(label: g))
                         .toList(),
                   ),
@@ -405,7 +433,152 @@ class _ActionButtons extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Glass icon button (identical to MovieDetailsScreen)
+// Cast row
+// ---------------------------------------------------------------------------
+
+class _CastRow extends StatelessWidget {
+  const _CastRow({required this.cast});
+
+  final List<TmdbCastMember> cast;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 120,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        itemCount: cast.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 16),
+        itemBuilder: (context, i) => _CastCard(member: cast[i]),
+      ),
+    );
+  }
+}
+
+class _CastCard extends StatelessWidget {
+  const _CastCard({required this.member});
+
+  final TmdbCastMember member;
+
+  @override
+  Widget build(BuildContext context) {
+    final photoUrl = member.profileUrl('w185');
+
+    return SizedBox(
+      width: 72,
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 32,
+            backgroundColor: AppColors.graphite,
+            backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+            child: photoUrl == null
+                ? const Icon(Icons.person, color: AppColors.onSurfaceVariant)
+                : null,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            member.name,
+            style: AppTextStyles.labelSm,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Recommendations row
+// ---------------------------------------------------------------------------
+
+class _RecommendationsRow extends StatelessWidget {
+  const _RecommendationsRow({required this.movies});
+
+  final List<TmdbSearchResult> movies;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 200,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        itemCount: movies.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (context, i) => _RecommendationCard(movie: movies[i]),
+      ),
+    );
+  }
+}
+
+class _RecommendationCard extends StatefulWidget {
+  const _RecommendationCard({required this.movie});
+
+  final TmdbSearchResult movie;
+
+  @override
+  State<_RecommendationCard> createState() => _RecommendationCardState();
+}
+
+class _RecommendationCardState extends State<_RecommendationCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final posterUrl = widget.movie.posterUrl('w185');
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => context.push('/tmdb/${widget.movie.id}'),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 110,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: _hovered
+                ? [
+                    BoxShadow(
+                      color: AppColors.gold.withAlpha(60),
+                      blurRadius: 12,
+                    ),
+                  ]
+                : null,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: posterUrl != null
+                ? Image.network(
+                    posterUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => Container(
+                      color: AppColors.graphite,
+                      child: Center(
+                        child: Text(
+                          widget.movie.title,
+                          style: AppTextStyles.labelSm,
+                          textAlign: TextAlign.center,
+                          maxLines: 3,
+                        ),
+                      ),
+                    ),
+                  )
+                : Container(color: AppColors.graphite),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Glass icon button
 // ---------------------------------------------------------------------------
 
 class _GlassIconButton extends StatelessWidget {

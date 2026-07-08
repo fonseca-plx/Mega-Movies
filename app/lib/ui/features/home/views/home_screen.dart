@@ -2,52 +2,85 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mega_movies/data/models/movie.dart';
+import 'package:mega_movies/data/models/tmdb_search_result.dart';
 import 'package:mega_movies/data/repositories/movie_repository.dart';
 import 'package:mega_movies/ui/core/app_colors.dart';
 import 'package:mega_movies/ui/core/app_text_styles.dart';
 import 'package:mega_movies/ui/core/widgets/app_button.dart';
 import 'package:mega_movies/ui/core/widgets/glass_chip.dart';
-import 'package:mega_movies/ui/core/widgets/movie_card.dart';
+import 'package:mega_movies/ui/features/home/view_models/home_view_model.dart';
 
 const double _kMaxWidth = 1200;
 const double _kBreakpoint = 600;
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final repo = MovieRepository();
-    final featured = repo.featuredMovie;
-    final acclaimed = repo.criticallyAcclaimed;
-    final all = repo.getAll();
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
+class _HomeScreenState extends State<HomeScreen> {
+  late final HomeViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = HomeViewModel(repository: MovieRepository());
+    _viewModel.addListener(_rebuild);
+    _viewModel.load();
+  }
+
+  @override
+  void dispose() {
+    _viewModel
+      ..removeListener(_rebuild)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _rebuild() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
       extendBodyBehindAppBar: true,
       body: CustomScrollView(
         slivers: [
-          // Glass header overlays the hero below it
           const SliverToBoxAdapter(child: _AppHeader()),
-          SliverToBoxAdapter(child: _HeroSection(movie: featured)),
-          SliverToBoxAdapter(
-            child: _SectionContainer(
-              title: 'Critically Acclaimed',
-              child: _HorizontalMovieList(movies: acclaimed),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: _SectionContainer(
-              title: 'Curated Noir Collection',
-              subtitle: 'Shadows, deceit, and moral ambiguity.',
-              child: _BentoGrid(movies: all),
-            ),
-          ),
-          // Bottom padding for nav bar
+          SliverToBoxAdapter(child: _buildHero()),
+          SliverToBoxAdapter(child: _buildAcclaimed()),
+          SliverToBoxAdapter(child: _buildNoirGrid()),
           const SliverToBoxAdapter(child: SizedBox(height: 96)),
         ],
       ),
+    );
+  }
+
+  Widget _buildHero() {
+    if (_viewModel.isLoading || _viewModel.featuredMovie == null) {
+      return const _HeroSkeleton();
+    }
+    return _HeroSection(movie: _viewModel.featuredMovie!);
+  }
+
+  Widget _buildAcclaimed() {
+    return _SectionContainer(
+      title: 'Critically Acclaimed',
+      child: _viewModel.isLoading
+          ? const _HorizontalSkeletonList()
+          : _HorizontalMovieList(movies: _viewModel.acclaimed),
+    );
+  }
+
+  Widget _buildNoirGrid() {
+    return _SectionContainer(
+      title: 'Curated Noir Collection',
+      subtitle: 'Shadows, deceit, and moral ambiguity.',
+      child: _viewModel.isLoading
+          ? const _BentoSkeleton()
+          : _BentoGrid(movies: _viewModel.noirGrid),
     );
   }
 }
@@ -179,12 +212,13 @@ class _AvatarButton extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Hero section
+// Hero section (real TMDB movie)
 // ---------------------------------------------------------------------------
 
 class _HeroSection extends StatelessWidget {
   const _HeroSection({required this.movie});
-  final Movie movie;
+
+  final TmdbSearchResult movie;
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +226,7 @@ class _HeroSection extends StatelessWidget {
     final heroHeight = size.width >= _kBreakpoint
         ? 500.0
         : (size.height * 0.55).clamp(300.0, 500.0);
+    final backdropUrl = movie.backdropUrl('w1280');
 
     return SizedBox(
       height: heroHeight,
@@ -199,12 +234,15 @@ class _HeroSection extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           // Backdrop image
-          Image.network(
-            movie.backdropUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => Container(color: AppColors.graphite),
-          ),
-          // Safe zone gradient (15% from bottom per DESIGN.md)
+          backdropUrl != null
+              ? Image.network(
+                  backdropUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) =>
+                      Container(color: AppColors.graphite),
+                )
+              : Container(color: AppColors.graphite),
+          // Gradient overlay
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -243,36 +281,31 @@ class _HeroSection extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Text(
-                            '${movie.year}',
-                            style: AppTextStyles.labelLg.copyWith(
-                              color: AppColors.onSurfaceVariant,
+                          if (movie.year != null)
+                            Text(
+                              '${movie.year}',
+                              style: AppTextStyles.labelLg.copyWith(
+                                color: AppColors.onSurfaceVariant,
+                              ),
                             ),
-                          ),
                           const _Dot(),
-                          Text(
-                            movie.formattedDuration,
-                            style: AppTextStyles.labelLg.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
-                          ),
-                          const _Dot(),
-                          Text(
-                            movie.genres.join(', '),
-                            style: AppTextStyles.labelLg.copyWith(
-                              color: AppColors.onSurfaceVariant,
-                            ),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.star,
+                                color: AppColors.tertiary,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                movie.voteAverage.toStringAsFixed(1),
+                                style: AppTextStyles.labelLg.copyWith(
+                                  color: AppColors.tertiary,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        movie.synopsis,
-                        style: AppTextStyles.bodyLg.copyWith(
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 24),
                       Wrap(
@@ -282,7 +315,7 @@ class _HeroSection extends StatelessWidget {
                           PrimaryButton(
                             label: 'Play Now',
                             icon: Icons.play_arrow,
-                            onPressed: () => context.push('/movie/${movie.id}'),
+                            onPressed: () => context.push('/tmdb/${movie.id}'),
                           ),
                           SecondaryButton(
                             label: 'Watchlist',
@@ -305,6 +338,7 @@ class _HeroSection extends StatelessWidget {
 
 class _Dot extends StatelessWidget {
   const _Dot();
+
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -329,6 +363,7 @@ class _SectionContainer extends StatelessWidget {
     required this.child,
     this.subtitle,
   });
+
   final String title;
   final String? subtitle;
   final Widget child;
@@ -364,26 +399,149 @@ class _SectionContainer extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Horizontal movie list
+// Horizontal movie list (real data)
 // ---------------------------------------------------------------------------
 
 class _HorizontalMovieList extends StatelessWidget {
   const _HorizontalMovieList({required this.movies});
-  final List<Movie> movies;
+
+  final List<TmdbSearchResult> movies;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      // 260 px: ~210 px image (140 wide × 3/2 ratio) + 6 gap + ~44 px text
-      height: 260,
+      height: 240,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         itemCount: movies.length,
         separatorBuilder: (_, _) => const SizedBox(width: 16),
-        itemBuilder: (context, i) => MovieCard(
-          movie: movies[i],
-          onTap: () => context.push('/movie/${movies[i].id}'),
+        itemBuilder: (context, i) => _TmdbMovieCard(movie: movies[i]),
+      ),
+    );
+  }
+}
+
+/// Compact poster card used in horizontal carousels.
+class _TmdbMovieCard extends StatefulWidget {
+  const _TmdbMovieCard({required this.movie});
+
+  final TmdbSearchResult movie;
+
+  @override
+  State<_TmdbMovieCard> createState() => _TmdbMovieCardState();
+}
+
+class _TmdbMovieCardState extends State<_TmdbMovieCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+      lowerBound: 0,
+      upperBound: 1,
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final posterUrl = widget.movie.posterUrl('w342');
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => _ctrl.forward(),
+      onExit: (_) => _ctrl.reverse(),
+      child: GestureDetector(
+        onTap: () => context.push('/tmdb/${widget.movie.id}'),
+        child: SizedBox(
+          width: 130,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AnimatedBuilder(
+                animation: _ctrl,
+                builder: (context, child) => Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.gold.withAlpha(
+                          (_ctrl.value * 77).toInt(),
+                        ),
+                        blurRadius: 15,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: child,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    height: 180,
+                    width: 130,
+                    child: posterUrl != null
+                        ? Image.network(
+                            posterUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) =>
+                                _PosterFallback(title: widget.movie.title),
+                          )
+                        : _PosterFallback(title: widget.movie.title),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                widget.movie.title,
+                style: AppTextStyles.labelLg,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (widget.movie.year != null)
+                Text(
+                  '${widget.movie.year}',
+                  style: AppTextStyles.labelSm.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PosterFallback extends StatelessWidget {
+  const _PosterFallback({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.graphite,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(
+            title,
+            style: AppTextStyles.labelSm,
+            textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ),
     );
@@ -391,28 +549,35 @@ class _HorizontalMovieList extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Bento grid
+// Bento grid (real data)
 // ---------------------------------------------------------------------------
 
 class _BentoGrid extends StatelessWidget {
   const _BentoGrid({required this.movies});
-  final List<Movie> movies;
+
+  final List<TmdbSearchResult> movies;
 
   @override
   Widget build(BuildContext context) {
+    if (movies.isEmpty) return const SizedBox.shrink();
+
     final isWide = MediaQuery.sizeOf(context).width >= _kBreakpoint;
+    final items = movies.take(3).toList();
 
     if (!isWide) {
-      // Narrow: single featured card + small row
       return Column(
         children: [
-          _BentoCard(movie: movies[0], height: 260),
+          _BentoCard(movie: items[0], height: 260),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _BentoCard(movie: movies[1], height: 160)),
+              Expanded(child: _BentoCard(movie: items[1], height: 160)),
               const SizedBox(width: 16),
-              Expanded(child: _BentoCard(movie: movies[2], height: 160)),
+              Expanded(
+                child: items.length > 2
+                    ? _BentoCard(movie: items[2], height: 160)
+                    : const SizedBox.shrink(),
+              ),
             ],
           ),
         ],
@@ -423,14 +588,18 @@ class _BentoGrid extends StatelessWidget {
       height: 400,
       child: Row(
         children: [
-          Expanded(flex: 2, child: _BentoCard(movie: movies[0], height: 400)),
+          Expanded(flex: 2, child: _BentoCard(movie: items[0], height: 400)),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               children: [
-                Expanded(child: _BentoCard(movie: movies[1], height: 192)),
+                Expanded(child: _BentoCard(movie: items[1], height: 192)),
                 const SizedBox(height: 16),
-                Expanded(child: _BentoCard(movie: movies[2], height: 192)),
+                Expanded(
+                  child: items.length > 2
+                      ? _BentoCard(movie: items[2], height: 192)
+                      : const SizedBox.shrink(),
+                ),
               ],
             ),
           ),
@@ -442,7 +611,8 @@ class _BentoGrid extends StatelessWidget {
 
 class _BentoCard extends StatefulWidget {
   const _BentoCard({required this.movie, required this.height});
-  final Movie movie;
+
+  final TmdbSearchResult movie;
   final double height;
 
   @override
@@ -454,12 +624,14 @@ class _BentoCardState extends State<_BentoCard> {
 
   @override
   Widget build(BuildContext context) {
+    final backdropUrl = widget.movie.backdropUrl('w780');
+
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => context.push('/movie/${widget.movie.id}'),
+        onTap: () => context.push('/tmdb/${widget.movie.id}'),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: SizedBox(
@@ -471,12 +643,14 @@ class _BentoCardState extends State<_BentoCard> {
                   scale: _hovered ? 1.05 : 1.0,
                   duration: const Duration(milliseconds: 400),
                   curve: Curves.easeOut,
-                  child: Image.network(
-                    widget.movie.backdropUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
-                        Container(color: AppColors.graphite),
-                  ),
+                  child: backdropUrl != null
+                      ? Image.network(
+                          backdropUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              Container(color: AppColors.graphite),
+                        )
+                      : Container(color: AppColors.graphite),
                 ),
                 const DecoratedBox(
                   decoration: BoxDecoration(
@@ -498,7 +672,6 @@ class _BentoCardState extends State<_BentoCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // Inner border per DESIGN.md Level 1
                 DecoratedBox(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
@@ -507,6 +680,161 @@ class _BentoCardState extends State<_BentoCard> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Skeleton loaders
+// ---------------------------------------------------------------------------
+
+class _HeroSkeleton extends StatelessWidget {
+  const _HeroSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final h = size.width >= _kBreakpoint
+        ? 500.0
+        : (size.height * 0.55).clamp(300.0, 500.0);
+    return _ShimmerBox(width: double.infinity, height: h, radius: 0);
+  }
+}
+
+class _HorizontalSkeletonList extends StatelessWidget {
+  const _HorizontalSkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 240,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: 6,
+        separatorBuilder: (_, _) => const SizedBox(width: 16),
+        itemBuilder: (_, _) => const _ShimmerBox(width: 130, height: 240),
+      ),
+    );
+  }
+}
+
+class _BentoSkeleton extends StatelessWidget {
+  const _BentoSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width >= _kBreakpoint;
+    if (!isWide) {
+      return Column(
+        children: [
+          const _ShimmerBox(width: double.infinity, height: 260),
+          const SizedBox(height: 16),
+          Row(
+            children: const [
+              Expanded(child: _ShimmerBox(width: double.infinity, height: 160)),
+              SizedBox(width: 16),
+              Expanded(child: _ShimmerBox(width: double.infinity, height: 160)),
+            ],
+          ),
+        ],
+      );
+    }
+    return SizedBox(
+      height: 400,
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: const _ShimmerBox(width: double.infinity, height: 400),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              children: const [
+                Expanded(
+                  child: _ShimmerBox(
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Expanded(
+                  child: _ShimmerBox(
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A shimmer-effect placeholder box.
+class _ShimmerBox extends StatefulWidget {
+  const _ShimmerBox({
+    required this.width,
+    required this.height,
+    this.radius = 8,
+  });
+
+  final double width;
+  final double height;
+  final double radius;
+
+  @override
+  State<_ShimmerBox> createState() => _ShimmerBoxState();
+}
+
+class _ShimmerBoxState extends State<_ShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, _) => Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(widget.radius),
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              AppColors.graphite.withAlpha(180),
+              Color.lerp(
+                AppColors.graphite,
+                AppColors.surfaceContainerHigh,
+                _anim.value,
+              )!,
+              AppColors.graphite.withAlpha(180),
+            ],
+            stops: [0.0, 0.5, 1.0],
           ),
         ),
       ),
