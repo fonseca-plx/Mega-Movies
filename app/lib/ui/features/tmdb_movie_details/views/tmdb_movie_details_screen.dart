@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:mega_movies/data/models/tmdb_cast_member.dart';
 import 'package:mega_movies/data/models/tmdb_movie_details.dart';
 import 'package:mega_movies/data/models/tmdb_search_result.dart';
+import 'package:mega_movies/data/repositories/auth_repository.dart';
 import 'package:mega_movies/data/repositories/movie_repository.dart';
+import 'package:mega_movies/data/repositories/watchlist_repository.dart';
 import 'package:mega_movies/data/services/tmdb_movie_service.dart';
 import 'package:mega_movies/ui/core/app_colors.dart';
 import 'package:mega_movies/ui/core/app_text_styles.dart';
@@ -17,10 +19,21 @@ const double _kMaxWidth = 1200;
 /// Full-screen details page for a TMDB movie.
 ///
 /// Fetches movie details (with cast) and recommendations in parallel.
+///
+/// Receives [authRepository] and [watchlistRepository] via constructor because
+/// this route lives outside [StatefulShellRoute] and therefore cannot access
+/// the [AuthScope] / [WatchlistScope] provided by [AppShell].
 class TmdbMovieDetailsScreen extends StatefulWidget {
-  const TmdbMovieDetailsScreen({super.key, required this.tmdbId});
+  const TmdbMovieDetailsScreen({
+    super.key,
+    required this.tmdbId,
+    required this.authRepository,
+    required this.watchlistRepository,
+  });
 
   final int tmdbId;
+  final AuthRepository authRepository;
+  final WatchlistRepository watchlistRepository;
 
   @override
   State<TmdbMovieDetailsScreen> createState() => _TmdbMovieDetailsScreenState();
@@ -76,7 +89,12 @@ class _TmdbMovieDetailsScreenState extends State<TmdbMovieDetailsScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) return const _LoadingScaffold();
     if (_errorMessage != null) return _ErrorScaffold(message: _errorMessage!);
-    return _DetailsView(movie: _details!, recommendations: _recommendations);
+    return _DetailsView(
+      movie: _details!,
+      recommendations: _recommendations,
+      authRepository: widget.authRepository,
+      watchlistRepository: widget.watchlistRepository,
+    );
   }
 }
 
@@ -152,10 +170,17 @@ class _ErrorScaffold extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _DetailsView extends StatelessWidget {
-  const _DetailsView({required this.movie, required this.recommendations});
+  const _DetailsView({
+    required this.movie,
+    required this.recommendations,
+    required this.authRepository,
+    required this.watchlistRepository,
+  });
 
   final TmdbMovieDetails movie;
   final List<TmdbSearchResult> recommendations;
+  final AuthRepository authRepository;
+  final WatchlistRepository watchlistRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +204,11 @@ class _DetailsView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 24),
-                      _ActionButtons(movie: movie),
+                      _ActionButtons(
+                        movie: movie,
+                        authRepository: authRepository,
+                        watchlistRepository: watchlistRepository,
+                      ),
                       const SizedBox(height: 32),
                       if (movie.tagline != null &&
                           movie.tagline!.isNotEmpty) ...[
@@ -381,9 +410,15 @@ class _Dot extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.movie});
+  const _ActionButtons({
+    required this.movie,
+    required this.authRepository,
+    required this.watchlistRepository,
+  });
 
   final TmdbMovieDetails movie;
+  final AuthRepository authRepository;
+  final WatchlistRepository watchlistRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -401,10 +436,10 @@ class _ActionButtons extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: SecondaryButton(
-              label: 'Adicionar à Lista',
-              icon: Icons.add,
-              onPressed: () {},
+            child: _WatchlistButton(
+              movie: movie,
+              authRepository: authRepository,
+              watchlistRepository: watchlistRepository,
               isFullWidth: true,
             ),
           ),
@@ -421,14 +456,85 @@ class _ActionButtons extends StatelessWidget {
           isFullWidth: true,
         ),
         const SizedBox(height: 12),
-        SecondaryButton(
-          label: 'Adicionar à Lista',
-          icon: Icons.add,
-          onPressed: () {},
+        _WatchlistButton(
+          movie: movie,
+          authRepository: authRepository,
+          watchlistRepository: watchlistRepository,
           isFullWidth: true,
         ),
       ],
     );
+  }
+}
+
+/// Reactive watchlist toggle button.
+///
+/// Shows "Adicionar à Lista" when the movie is not saved, and "Adicionado"
+/// when it is. Requires the user to be authenticated; otherwise shows a
+/// [SnackBar] directing them to log in.
+class _WatchlistButton extends StatelessWidget {
+  const _WatchlistButton({
+    required this.movie,
+    required this.authRepository,
+    required this.watchlistRepository,
+    this.isFullWidth = false,
+  });
+
+  final TmdbMovieDetails movie;
+  final AuthRepository authRepository;
+  final WatchlistRepository watchlistRepository;
+  final bool isFullWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: watchlistRepository,
+      builder: (context, _) {
+        final inWatchlist = watchlistRepository.isInWatchlist(movie.id);
+
+        return SecondaryButton(
+          label: inWatchlist ? 'Adicionado' : 'Adicionar à Lista',
+          icon: inWatchlist ? Icons.bookmark : Icons.bookmark_border,
+          isFullWidth: isFullWidth,
+          onPressed: () => _toggle(context, inWatchlist: inWatchlist),
+        );
+      },
+    );
+  }
+
+  Future<void> _toggle(
+    BuildContext context, {
+    required bool inWatchlist,
+  }) async {
+    if (!authRepository.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Faça login para salvar filmes na sua watchlist'),
+          action: SnackBarAction(
+            label: 'Entrar',
+            onPressed: () => context.push('/login'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final userId = authRepository.currentUser!.id;
+    try {
+      if (inWatchlist) {
+        await watchlistRepository.remove(userId, movie.id);
+      } else {
+        await watchlistRepository.add(userId, movie);
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro ao atualizar watchlist. Tente novamente.'),
+          ),
+        );
+      }
+    }
   }
 }
 

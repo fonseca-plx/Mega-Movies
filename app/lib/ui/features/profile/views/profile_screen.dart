@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mega_movies/data/models/movie.dart';
+import 'package:mega_movies/data/local/app_database.dart';
 import 'package:mega_movies/data/models/user_profile.dart';
 import 'package:mega_movies/data/repositories/auth_repository.dart';
-import 'package:mega_movies/data/repositories/movie_repository.dart';
 import 'package:mega_movies/ui/core/app_colors.dart';
 import 'package:mega_movies/ui/core/app_text_styles.dart';
 import 'package:mega_movies/ui/core/widgets/app_button.dart';
+import 'package:mega_movies/ui/core/widgets/watchlist_scope.dart';
 
 const double _kMaxWidth = 900;
 const double _kBreakpoint = 600;
@@ -18,10 +18,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final repo = MovieRepository();
     final user = authRepository.currentUser!;
-    // Watchlist still uses mock data until a watchlist API is implemented
-    final watchlist = repo.getWatchlist([]);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -42,7 +39,10 @@ class ProfileScreen extends StatelessWidget {
                           authRepository: authRepository,
                         ),
                         const SizedBox(height: 48),
-                        _WatchlistSection(watchlist: watchlist),
+                        _WatchlistSection(
+                          userId: user.id,
+                          authRepository: authRepository,
+                        ),
                         const SizedBox(height: 96),
                       ],
                     ),
@@ -387,60 +387,81 @@ class _LinkItem {
 }
 
 // ---------------------------------------------------------------------------
-// Watchlist section
+// Watchlist section — driven by WatchlistRepository via WatchlistScope
 // ---------------------------------------------------------------------------
 
 class _WatchlistSection extends StatelessWidget {
-  const _WatchlistSection({required this.watchlist});
-  final List<Movie> watchlist;
+  const _WatchlistSection({required this.userId, required this.authRepository});
+
+  final int userId;
+  final AuthRepository authRepository;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
+    final watchlistRepo = WatchlistScope.of(context);
+
+    if (watchlistRepo == null) return const SizedBox.shrink();
+
+    return ListenableBuilder(
+      listenable: watchlistRepo,
+      builder: (context, _) {
+        final entries = watchlistRepo.entries;
+
+        return Column(
           children: [
-            Expanded(
-              child: Text('My Watchlist', style: AppTextStyles.headlineLg),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Minha Watchlist',
+                    style: AppTextStyles.headlineLg,
+                  ),
+                ),
+                Text(
+                  '${entries.length} filme${entries.length == 1 ? '' : 's'}',
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
-            GhostButton(
-              label: 'Filter',
-              icon: Icons.filter_list,
-              onPressed: () {},
-            ),
+            const Divider(color: AppColors.glassBorder, height: 24),
+            const SizedBox(height: 8),
+            entries.isEmpty
+                ? const _EmptyWatchlist()
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final crossCount = (constraints.maxWidth / 160)
+                          .floor()
+                          .clamp(2, 5);
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: entries.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossCount,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 2 / 3,
+                        ),
+                        itemBuilder: (context, i) => _WatchlistCard(
+                          entry: entries[i],
+                          onRemove: () =>
+                              watchlistRepo.remove(userId, entries[i].movieId),
+                        ),
+                      );
+                    },
+                  ),
           ],
-        ),
-        const Divider(color: AppColors.glassBorder, height: 24),
-        const SizedBox(height: 8),
-        watchlist.isEmpty
-            ? _EmptyWatchlist()
-            : LayoutBuilder(
-                builder: (context, constraints) {
-                  final crossCount = (constraints.maxWidth / 160).floor().clamp(
-                    2,
-                    5,
-                  );
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: watchlist.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossCount,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 2 / 3,
-                    ),
-                    itemBuilder: (context, i) =>
-                        _WatchlistCard(movie: watchlist[i]),
-                  );
-                },
-              ),
-      ],
+        );
+      },
     );
   }
 }
 
 class _EmptyWatchlist extends StatelessWidget {
+  const _EmptyWatchlist();
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -473,8 +494,10 @@ class _EmptyWatchlist extends StatelessWidget {
 }
 
 class _WatchlistCard extends StatefulWidget {
-  const _WatchlistCard({required this.movie});
-  final Movie movie;
+  const _WatchlistCard({required this.entry, required this.onRemove});
+
+  final WatchlistEntry entry;
+  final VoidCallback onRemove;
 
   @override
   State<_WatchlistCard> createState() => _WatchlistCardState();
@@ -485,12 +508,16 @@ class _WatchlistCardState extends State<_WatchlistCard> {
 
   @override
   Widget build(BuildContext context) {
+    final posterUrl = widget.entry.posterPath != null
+        ? 'https://image.tmdb.org/t/p/w342${widget.entry.posterPath}'
+        : null;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => context.push('/movie/${widget.movie.id}'),
+        onTap: () => context.push('/tmdb/${widget.entry.movieId}'),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
@@ -509,12 +536,15 @@ class _WatchlistCardState extends State<_WatchlistCard> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.network(
-                  widget.movie.posterUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) =>
-                      Container(color: AppColors.graphite),
-                ),
+                posterUrl != null
+                    ? Image.network(
+                        posterUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            Container(color: AppColors.graphite),
+                      )
+                    : Container(color: AppColors.graphite),
+                // Overlay with title on hover
                 AnimatedOpacity(
                   opacity: _hovered ? 1 : 0,
                   duration: const Duration(milliseconds: 200),
@@ -538,37 +568,45 @@ class _WatchlistCardState extends State<_WatchlistCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.movie.title,
+                              widget.entry.title,
                               style: AppTextStyles.headlineMd.copyWith(
                                 fontSize: 14,
                               ),
                               maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            Text(
-                              '${widget.movie.year}',
-                              style: AppTextStyles.labelSm.copyWith(
-                                color: AppColors.onSurfaceVariant,
+                            if (widget.entry.year != null)
+                              Text(
+                                '${widget.entry.year}',
+                                style: AppTextStyles.labelSm.copyWith(
+                                  color: AppColors.onSurfaceVariant,
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),
                     ),
                   ),
                 ),
+                // Remove button — always visible in top-right corner
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(128),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.bookmark,
-                      size: 14,
-                      color: AppColors.onSurface,
+                  child: GestureDetector(
+                    onTap: widget.onRemove,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(153),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.glassBorder),
+                      ),
+                      child: const Icon(
+                        Icons.bookmark_remove,
+                        size: 16,
+                        color: AppColors.onSurface,
+                      ),
                     ),
                   ),
                 ),

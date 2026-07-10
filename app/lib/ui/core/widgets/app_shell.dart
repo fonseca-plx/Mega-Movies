@@ -3,9 +3,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mega_movies/data/repositories/auth_repository.dart';
+import 'package:mega_movies/data/repositories/watchlist_repository.dart';
 import 'package:mega_movies/ui/core/app_colors.dart';
 import 'package:mega_movies/ui/core/app_text_styles.dart';
 import 'package:mega_movies/ui/core/widgets/auth_scope.dart';
+import 'package:mega_movies/ui/core/widgets/watchlist_scope.dart';
 
 const double _kBreakpoint = 600;
 
@@ -21,10 +23,12 @@ class AppShell extends StatelessWidget {
     super.key,
     required this.navigationShell,
     required this.authRepository,
+    required this.watchlistRepository,
   });
 
   final StatefulNavigationShell navigationShell;
   final AuthRepository authRepository;
+  final WatchlistRepository watchlistRepository;
 
   static const List<_NavItem> _items = [
     _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
@@ -51,24 +55,27 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return AuthScope(
       repository: authRepository,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth >= _kBreakpoint) {
-            return _WideLayout(
+      child: WatchlistScope(
+        repository: watchlistRepository,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth >= _kBreakpoint) {
+              return _WideLayout(
+                navigationShell: navigationShell,
+                items: _items,
+                currentIndex: navigationShell.currentIndex,
+                onTap: _onTap,
+                authRepository: authRepository,
+              );
+            }
+            return _NarrowLayout(
               navigationShell: navigationShell,
               items: _items,
               currentIndex: navigationShell.currentIndex,
               onTap: _onTap,
-              authRepository: authRepository,
             );
-          }
-          return _NarrowLayout(
-            navigationShell: navigationShell,
-            items: _items,
-            currentIndex: navigationShell.currentIndex,
-            onTap: _onTap,
-          );
-        },
+          },
+        ),
       ),
     );
   }

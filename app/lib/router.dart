@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:mega_movies/data/repositories/auth_repository.dart';
+import 'package:mega_movies/data/repositories/watchlist_repository.dart';
 import 'package:mega_movies/ui/core/widgets/app_shell.dart';
 import 'package:mega_movies/ui/features/auth/views/login_screen.dart';
 import 'package:mega_movies/ui/features/auth/views/register_screen.dart';
@@ -9,9 +10,12 @@ import 'package:mega_movies/ui/features/movie_details/views/movie_details_screen
 import 'package:mega_movies/ui/features/profile/views/profile_screen.dart';
 import 'package:mega_movies/ui/features/tmdb_movie_details/views/tmdb_movie_details_screen.dart';
 
-/// Creates the application router, wiring the [authRepository] into guards
-/// and screen constructors that require it.
-GoRouter createRouter(AuthRepository authRepository) {
+/// Creates the application router, wiring the [authRepository] and
+/// [watchlistRepository] into guards and screen constructors that require them.
+GoRouter createRouter({
+  required AuthRepository authRepository,
+  required WatchlistRepository watchlistRepository,
+}) {
   return GoRouter(
     initialLocation: '/',
     refreshListenable: authRepository,
@@ -23,6 +27,7 @@ GoRouter createRouter(AuthRepository authRepository) {
         builder: (context, state, navigationShell) => AppShell(
           navigationShell: navigationShell,
           authRepository: authRepository,
+          watchlistRepository: watchlistRepository,
         ),
         branches: [
           StatefulShellBranch(
@@ -87,6 +92,8 @@ GoRouter createRouter(AuthRepository authRepository) {
         path: '/tmdb/:id',
         builder: (context, state) => TmdbMovieDetailsScreen(
           tmdbId: int.parse(state.pathParameters['id']!),
+          authRepository: authRepository,
+          watchlistRepository: watchlistRepository,
         ),
       ),
     ],

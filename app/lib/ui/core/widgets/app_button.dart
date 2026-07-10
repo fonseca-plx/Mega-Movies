@@ -40,7 +40,7 @@ class SecondaryButton extends StatelessWidget {
   });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final IconData? icon;
   final bool isFullWidth;
 
@@ -87,7 +87,7 @@ class _AppButton extends StatefulWidget {
 
   final _ButtonVariant variant;
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final IconData? icon;
   final bool isFullWidth;
 
