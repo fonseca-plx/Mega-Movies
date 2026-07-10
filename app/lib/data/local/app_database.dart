@@ -35,8 +35,13 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 1;
 
-  static QueryExecutor _openConnection() =>
-      driftDatabase(name: 'mega_movies_db');
+  static QueryExecutor _openConnection() => driftDatabase(
+        name: 'mega_movies_db',
+        web: DriftWebOptions(
+          sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+          driftWorker: Uri.parse('drift_worker.js'),
+        ),
+      );
 
   // ---------------------------------------------------------------------------
   // Queries
