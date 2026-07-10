@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mega_movies/data/repositories/auth_repository.dart';
 import 'package:mega_movies/ui/core/app_colors.dart';
 import 'package:mega_movies/ui/core/app_text_styles.dart';
+import 'package:mega_movies/ui/core/widgets/auth_scope.dart';
 
 const double _kBreakpoint = 600;
 
@@ -13,9 +14,8 @@ const double _kBreakpoint = 600;
 /// - **Narrow (< 600 px)**: bottom navigation bar (mobile / portrait).
 /// - **Wide (≥ 600 px)**: top navigation bar in a glass header — no side rail.
 ///
-/// Uses [LayoutBuilder] on `maxWidth` as recommended by the
-/// `flutter-build-responsive-layout` skill (never checks hardware type or
-/// orientation directly).
+/// Wraps the entire subtree in [AuthScope] so any descendant screen can access
+/// the [AuthRepository] via `AuthScope.of(context)`.
 class AppShell extends StatelessWidget {
   const AppShell({
     super.key,
@@ -49,25 +49,27 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= _kBreakpoint) {
-          return _WideLayout(
+    return AuthScope(
+      repository: authRepository,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= _kBreakpoint) {
+            return _WideLayout(
+              navigationShell: navigationShell,
+              items: _items,
+              currentIndex: navigationShell.currentIndex,
+              onTap: _onTap,
+              authRepository: authRepository,
+            );
+          }
+          return _NarrowLayout(
             navigationShell: navigationShell,
             items: _items,
             currentIndex: navigationShell.currentIndex,
             onTap: _onTap,
-            authRepository: authRepository,
           );
-        }
-        return _NarrowLayout(
-          navigationShell: navigationShell,
-          items: _items,
-          currentIndex: navigationShell.currentIndex,
-          onTap: _onTap,
-          authRepository: authRepository,
-        );
-      },
+        },
+      ),
     );
   }
 }
@@ -76,8 +78,8 @@ class AppShell extends StatelessWidget {
 // Auth header action — "Entrar" button or user avatar
 // ---------------------------------------------------------------------------
 
-class _AuthHeaderAction extends StatelessWidget {
-  const _AuthHeaderAction({required this.authRepository});
+class AuthHeaderAction extends StatelessWidget {
+  const AuthHeaderAction({super.key, required this.authRepository});
 
   final AuthRepository authRepository;
 
@@ -234,7 +236,7 @@ class _InitialFallback extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Narrow layout — bottom nav bar
+// Narrow layout — bottom nav bar, NO top AppBar (header lives in each screen)
 // ---------------------------------------------------------------------------
 
 class _NarrowLayout extends StatelessWidget {
@@ -243,32 +245,19 @@ class _NarrowLayout extends StatelessWidget {
     required this.items,
     required this.currentIndex,
     required this.onTap,
-    required this.authRepository,
   });
 
   final StatefulNavigationShell navigationShell;
   final List<_NavItem> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
-  final AuthRepository authRepository;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
       extendBody: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: _AuthHeaderAction(authRepository: authRepository),
-            ),
-          ),
-        ],
-      ),
+      // No AppBar here — each screen owns its narrow header via AuthScope
       body: navigationShell,
       bottomNavigationBar: ClipRect(
         child: BackdropFilter(
@@ -384,9 +373,7 @@ class _WideLayout extends StatelessWidget {
       backgroundColor: AppColors.surface,
       body: Stack(
         children: [
-          // Page content with top padding for the glass header
           Positioned.fill(child: navigationShell),
-          // Glass header overlay
           Positioned(
             top: 0,
             left: 0,
@@ -437,7 +424,6 @@ class _GlassHeader extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   children: [
-                    // Brand
                     Text(
                       'MEGA MOVIES',
                       style: AppTextStyles.labelLg.copyWith(
@@ -446,7 +432,6 @@ class _GlassHeader extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 48),
-                    // Nav links
                     Expanded(
                       child: Row(
                         children: List.generate(items.length, (i) {
@@ -458,8 +443,7 @@ class _GlassHeader extends StatelessWidget {
                         }),
                       ),
                     ),
-                    // Auth action
-                    _AuthHeaderAction(authRepository: authRepository),
+                    AuthHeaderAction(authRepository: authRepository),
                     const SizedBox(width: 8),
                   ],
                 ),

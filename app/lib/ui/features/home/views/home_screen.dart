@@ -7,6 +7,8 @@ import 'package:mega_movies/data/repositories/movie_repository.dart';
 import 'package:mega_movies/ui/core/app_colors.dart';
 import 'package:mega_movies/ui/core/app_text_styles.dart';
 import 'package:mega_movies/ui/core/widgets/app_button.dart';
+import 'package:mega_movies/ui/core/widgets/app_shell.dart';
+import 'package:mega_movies/ui/core/widgets/auth_scope.dart';
 import 'package:mega_movies/ui/core/widgets/glass_chip.dart';
 import 'package:mega_movies/ui/features/home/view_models/home_view_model.dart';
 
@@ -96,6 +98,11 @@ class _AppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final isWide = MediaQuery.sizeOf(context).width >= _kBreakpoint;
 
+    // In wide layout the AppShell glass header handles navigation and auth.
+    if (isWide) return const SizedBox.shrink();
+
+    final authRepo = AuthScope.of(context);
+
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
@@ -116,95 +123,12 @@ class _AppHeader extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  if (isWide) ...[
-                    _HeaderNavLink(
-                      label: 'Home',
-                      isActive: true,
-                      onTap: () => context.go('/'),
-                    ),
-                    const SizedBox(width: 32),
-                    _HeaderNavLink(
-                      label: 'Explore',
-                      onTap: () => context.go('/explore'),
-                    ),
-                    const SizedBox(width: 32),
-                    _HeaderNavLink(
-                      label: 'Watchlist',
-                      onTap: () => context.go('/profile'),
-                    ),
-                    const SizedBox(width: 24),
-                  ],
-                  const _AvatarButton(),
+                  if (authRepo != null)
+                    AuthHeaderAction(authRepository: authRepo),
                 ],
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HeaderNavLink extends StatefulWidget {
-  const _HeaderNavLink({
-    required this.label,
-    required this.onTap,
-    this.isActive = false,
-  });
-
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  @override
-  State<_HeaderNavLink> createState() => _HeaderNavLinkState();
-}
-
-class _HeaderNavLinkState extends State<_HeaderNavLink> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 150),
-          style: AppTextStyles.labelLg.copyWith(
-            color: widget.isActive
-                ? AppColors.metallicBlueLight
-                : _hovered
-                ? AppColors.onSurface
-                : AppColors.onSurfaceVariant,
-          ),
-          child: Text(widget.label),
-        ),
-      ),
-    );
-  }
-}
-
-class _AvatarButton extends StatelessWidget {
-  const _AvatarButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.go('/profile'),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.outlineVariant),
-            color: AppColors.surfaceContainerHigh,
-          ),
-          child: const Icon(Icons.person, size: 18, color: AppColors.secondary),
         ),
       ),
     );
