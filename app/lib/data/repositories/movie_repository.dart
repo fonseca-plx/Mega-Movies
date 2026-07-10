@@ -3,7 +3,6 @@ import 'package:mega_movies/data/models/tmdb_cast_member.dart';
 import 'package:mega_movies/data/models/tmdb_genre.dart';
 import 'package:mega_movies/data/models/tmdb_movie_details.dart';
 import 'package:mega_movies/data/models/tmdb_search_result.dart';
-import 'package:mega_movies/data/models/user_profile.dart';
 import 'package:mega_movies/data/services/mock_movie_service.dart';
 import 'package:mega_movies/data/services/tmdb_movie_service.dart';
 
@@ -31,8 +30,6 @@ class MovieRepository {
 
   List<Movie> getWatchlist(List<String> ids) =>
       MockMovieService.allMovies.where((m) => ids.contains(m.id)).toList();
-
-  UserProfile getProfile() => MockMovieService.currentUser;
 
   // ---------------------------------------------------------------------------
   // TMDB — lists
