@@ -1,5 +1,4 @@
 import 'package:mega_movies/data/models/movie.dart';
-import 'package:mega_movies/data/models/user_profile.dart';
 
 /// In-memory mock data – replace with real API calls when the backend is ready.
 abstract final class MockMovieService {
@@ -175,14 +174,4 @@ abstract final class MockMovieService {
       cast: const [],
     ),
   ];
-
-  static const UserProfile currentUser = UserProfile(
-    id: 'user_1',
-    displayName: 'Sarah Jenkins',
-    avatarUrl:
-        '$_base/AB6AXuB2P4vjL0H1AapFYgA340E3ApfWHLYNCA32a-t85jkb4c9DPGnM9l7ZPZgcqzLZ0T1WTj01RLVMG61SyLLfGGpF3jd4HGSjWdsJormji6Q-cHPjo0S2o7GkZ4tMHSbmWOV0IFTuGTZZ2SWvSqUl9bHdQUfIk2F2PHe7eyK7XaYKf5LHP0Djk5RixLH7zWEGBlBADyRuKgpIPC0hMpXik0AXTH12eVrElEqY8tr8A6rNZjthUos01b2-LQqJj1pQR7rwRyc8WPDf4Eo',
-    moviesWatched: 142,
-    memberSince: 2018,
-    watchlistIds: ['godfather', 'vertigo', 'psycho', '12_angry_men'],
-  );
 }

@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:mega_movies/data/models/movie.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mega_movies/data/local/app_database.dart';
 import 'package:mega_movies/data/models/user_profile.dart';
-import 'package:mega_movies/data/repositories/movie_repository.dart';
+import 'package:mega_movies/data/repositories/auth_repository.dart';
 import 'package:mega_movies/ui/core/app_colors.dart';
 import 'package:mega_movies/ui/core/app_text_styles.dart';
 import 'package:mega_movies/ui/core/widgets/app_button.dart';
-import 'package:go_router/go_router.dart';
+import 'package:mega_movies/ui/core/widgets/watchlist_scope.dart';
 
 const double _kMaxWidth = 900;
 const double _kBreakpoint = 600;
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, required this.authRepository});
+
+  final AuthRepository authRepository;
 
   @override
   Widget build(BuildContext context) {
-    final repo = MovieRepository();
-    final profile = repo.getProfile();
-    final watchlist = repo.getWatchlist(profile.watchlistIds);
+    final user = authRepository.currentUser!;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -33,9 +34,15 @@ class ProfileScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                     child: Column(
                       children: [
-                        _ProfileHero(profile: profile),
+                        _ProfileHero(
+                          profile: user,
+                          authRepository: authRepository,
+                        ),
                         const SizedBox(height: 48),
-                        _WatchlistSection(watchlist: watchlist),
+                        _WatchlistSection(
+                          userId: user.id,
+                          authRepository: authRepository,
+                        ),
                         const SizedBox(height: 96),
                       ],
                     ),
@@ -55,8 +62,10 @@ class ProfileScreen extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _ProfileHero extends StatelessWidget {
-  const _ProfileHero({required this.profile});
+  const _ProfileHero({required this.profile, required this.authRepository});
+
   final UserProfile profile;
+  final AuthRepository authRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -82,18 +91,23 @@ class _ProfileHero extends StatelessWidget {
               children: [
                 _Avatar(profile: profile),
                 const SizedBox(width: 24),
-                Expanded(child: _ProfileInfo(profile: profile)),
+                Expanded(
+                  child: _ProfileInfo(
+                    profile: profile,
+                    authRepository: authRepository,
+                  ),
+                ),
                 const VerticalDivider(color: AppColors.glassBorder, width: 32),
-                _QuickLinks(),
+                _QuickLinks(authRepository: authRepository),
               ],
             )
           : Column(
               children: [
                 _Avatar(profile: profile),
                 const SizedBox(height: 16),
-                _ProfileInfo(profile: profile),
+                _ProfileInfo(profile: profile, authRepository: authRepository),
                 const Divider(color: AppColors.glassBorder, height: 32),
-                _QuickLinks(horizontal: true),
+                _QuickLinks(horizontal: true, authRepository: authRepository),
               ],
             ),
     );
@@ -119,11 +133,14 @@ class _Avatar extends StatelessWidget {
             ],
           ),
           child: ClipOval(
-            child: Image.network(
-              profile.avatarUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(color: AppColors.graphite),
-            ),
+            child: profile.photo != null
+                ? Image.network(
+                    profile.photo!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) =>
+                        _InitialAvatar(initial: profile.initial),
+                  )
+                : _InitialAvatar(initial: profile.initial),
           ),
         ),
         Positioned(
@@ -145,19 +162,47 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-class _ProfileInfo extends StatelessWidget {
-  const _ProfileInfo({required this.profile});
-  final UserProfile profile;
+class _InitialAvatar extends StatelessWidget {
+  const _InitialAvatar({required this.initial});
+  final String initial;
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surfaceContainerHigh,
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: AppTextStyles.displayMd.copyWith(color: AppColors.gold),
+      ),
+    );
+  }
+}
+
+class _ProfileInfo extends StatelessWidget {
+  const _ProfileInfo({required this.profile, required this.authRepository});
+
+  final UserProfile profile;
+  final AuthRepository authRepository;
+
+  @override
+  Widget build(BuildContext context) {
+    final memberYear = profile.joinedAt.year;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(profile.displayName, style: AppTextStyles.displayMd),
+        Text(profile.fullName, style: AppTextStyles.displayMd),
         const SizedBox(height: 4),
         Text(
-          'Cinephile since ${profile.memberSince} • ${profile.moviesWatched} Movies Watched',
+          profile.email,
+          style: AppTextStyles.bodyMd.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Cinephile since $memberYear',
           style: AppTextStyles.bodyMd.copyWith(
             color: AppColors.onSurfaceVariant,
           ),
@@ -181,38 +226,109 @@ class _ProfileInfo extends StatelessWidget {
 }
 
 class _QuickLinks extends StatelessWidget {
-  const _QuickLinks({this.horizontal = false});
-  final bool horizontal;
+  const _QuickLinks({this.horizontal = false, required this.authRepository});
 
-  static const List<_LinkItem> _links = [
-    _LinkItem(icon: Icons.settings_outlined, label: 'Settings'),
-    _LinkItem(icon: Icons.credit_card_outlined, label: 'Billing'),
-    _LinkItem(icon: Icons.history, label: 'History'),
-  ];
+  final bool horizontal;
+  final AuthRepository authRepository;
 
   @override
   Widget build(BuildContext context) {
-    final children = _links
-        .map((l) => _QuickLinkTile(item: l, horizontal: horizontal))
-        .toList();
+    final staticLinks = [
+      _QuickLinkTile(
+        item: const _LinkItem(icon: Icons.settings_outlined, label: 'Settings'),
+        horizontal: horizontal,
+        onTap: () {},
+      ),
+      _QuickLinkTile(
+        item: const _LinkItem(
+          icon: Icons.credit_card_outlined,
+          label: 'Billing',
+        ),
+        horizontal: horizontal,
+        onTap: () {},
+      ),
+      _QuickLinkTile(
+        item: const _LinkItem(icon: Icons.history, label: 'History'),
+        horizontal: horizontal,
+        onTap: () {},
+      ),
+      _QuickLinkTile(
+        item: const _LinkItem(
+          icon: Icons.logout,
+          label: 'Sair',
+          isDestructive: true,
+        ),
+        horizontal: horizontal,
+        onTap: () => _confirmLogout(context, authRepository),
+      ),
+    ];
 
     return horizontal
         ? Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: children,
+            children: staticLinks,
           )
         : Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
+            children: staticLinks,
           );
+  }
+
+  Future<void> _confirmLogout(BuildContext context, AuthRepository repo) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.graphite,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: AppColors.glassBorder),
+        ),
+        title: Text('Sair da conta', style: AppTextStyles.headlineMd),
+        content: Text(
+          'Tem certeza que deseja sair?',
+          style: AppTextStyles.bodyMd.copyWith(
+            color: AppColors.onSurfaceVariant,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Cancelar',
+              style: AppTextStyles.labelLg.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              'Sair',
+              style: AppTextStyles.labelLg.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await repo.logout();
+      if (context.mounted) context.go('/');
+    }
   }
 }
 
 class _QuickLinkTile extends StatefulWidget {
-  const _QuickLinkTile({required this.item, this.horizontal = false});
+  const _QuickLinkTile({
+    required this.item,
+    this.horizontal = false,
+    required this.onTap,
+  });
+
   final _LinkItem item;
   final bool horizontal;
+  final VoidCallback onTap;
 
   @override
   State<_QuickLinkTile> createState() => _QuickLinkTileState();
@@ -223,30 +339,35 @@ class _QuickLinkTileState extends State<_QuickLinkTile> {
 
   @override
   Widget build(BuildContext context) {
+    final activeColor = widget.item.isDestructive
+        ? AppColors.error
+        : AppColors.tertiary;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              widget.item.icon,
-              color: _hovered ? AppColors.tertiary : AppColors.onSurfaceVariant,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              widget.item.label,
-              style: AppTextStyles.labelLg.copyWith(
-                color: _hovered
-                    ? AppColors.tertiary
-                    : AppColors.onSurfaceVariant,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                widget.item.icon,
+                color: _hovered ? activeColor : AppColors.onSurfaceVariant,
+                size: 20,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                widget.item.label,
+                style: AppTextStyles.labelLg.copyWith(
+                  color: _hovered ? activeColor : AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -254,63 +375,129 @@ class _QuickLinkTileState extends State<_QuickLinkTile> {
 }
 
 class _LinkItem {
-  const _LinkItem({required this.icon, required this.label});
+  const _LinkItem({
+    required this.icon,
+    required this.label,
+    this.isDestructive = false,
+  });
+
   final IconData icon;
   final String label;
+  final bool isDestructive;
 }
 
 // ---------------------------------------------------------------------------
-// Watchlist section
+// Watchlist section — driven by WatchlistRepository via WatchlistScope
 // ---------------------------------------------------------------------------
 
 class _WatchlistSection extends StatelessWidget {
-  const _WatchlistSection({required this.watchlist});
-  final List<Movie> watchlist;
+  const _WatchlistSection({required this.userId, required this.authRepository});
+
+  final int userId;
+  final AuthRepository authRepository;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
+    final watchlistRepo = WatchlistScope.of(context);
+
+    if (watchlistRepo == null) return const SizedBox.shrink();
+
+    return ListenableBuilder(
+      listenable: watchlistRepo,
+      builder: (context, _) {
+        final entries = watchlistRepo.entries;
+
+        return Column(
           children: [
-            Expanded(
-              child: Text('My Watchlist', style: AppTextStyles.headlineLg),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Minha Watchlist',
+                    style: AppTextStyles.headlineLg,
+                  ),
+                ),
+                Text(
+                  '${entries.length} filme${entries.length == 1 ? '' : 's'}',
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
-            GhostButton(
-              label: 'Filter',
-              icon: Icons.filter_list,
-              onPressed: () {},
-            ),
+            const Divider(color: AppColors.glassBorder, height: 24),
+            const SizedBox(height: 8),
+            entries.isEmpty
+                ? const _EmptyWatchlist()
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final crossCount = (constraints.maxWidth / 160)
+                          .floor()
+                          .clamp(2, 5);
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: entries.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossCount,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 2 / 3,
+                        ),
+                        itemBuilder: (context, i) => _WatchlistCard(
+                          entry: entries[i],
+                          onRemove: () =>
+                              watchlistRepo.remove(userId, entries[i].movieId),
+                        ),
+                      );
+                    },
+                  ),
           ],
-        ),
-        const Divider(color: AppColors.glassBorder, height: 24),
-        const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            // Adaptive column count based on width
-            final crossCount = (constraints.maxWidth / 160).floor().clamp(2, 5);
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: watchlist.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossCount,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 2 / 3,
-              ),
-              itemBuilder: (context, i) => _WatchlistCard(movie: watchlist[i]),
-            );
-          },
-        ),
-      ],
+        );
+      },
+    );
+  }
+}
+
+class _EmptyWatchlist extends StatelessWidget {
+  const _EmptyWatchlist();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.bookmarks_outlined,
+            size: 48,
+            color: AppColors.onSurfaceVariant,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Sua watchlist está vazia',
+            style: AppTextStyles.headlineMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Explore filmes e adicione-os à sua lista.',
+            style: AppTextStyles.bodyMd.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _WatchlistCard extends StatefulWidget {
-  const _WatchlistCard({required this.movie});
-  final Movie movie;
+  const _WatchlistCard({required this.entry, required this.onRemove});
+
+  final WatchlistEntry entry;
+  final VoidCallback onRemove;
 
   @override
   State<_WatchlistCard> createState() => _WatchlistCardState();
@@ -321,12 +508,16 @@ class _WatchlistCardState extends State<_WatchlistCard> {
 
   @override
   Widget build(BuildContext context) {
+    final posterUrl = widget.entry.posterPath != null
+        ? 'https://image.tmdb.org/t/p/w342${widget.entry.posterPath}'
+        : null;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => context.push('/movie/${widget.movie.id}'),
+        onTap: () => context.push('/tmdb/${widget.entry.movieId}'),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
@@ -345,13 +536,15 @@ class _WatchlistCardState extends State<_WatchlistCard> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.network(
-                  widget.movie.posterUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) =>
-                      Container(color: AppColors.graphite),
-                ),
-                // Hover overlay
+                posterUrl != null
+                    ? Image.network(
+                        posterUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            Container(color: AppColors.graphite),
+                      )
+                    : Container(color: AppColors.graphite),
+                // Overlay with title on hover
                 AnimatedOpacity(
                   opacity: _hovered ? 1 : 0,
                   duration: const Duration(milliseconds: 200),
@@ -375,38 +568,45 @@ class _WatchlistCardState extends State<_WatchlistCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.movie.title,
+                              widget.entry.title,
                               style: AppTextStyles.headlineMd.copyWith(
                                 fontSize: 14,
                               ),
                               maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            Text(
-                              '${widget.movie.year}',
-                              style: AppTextStyles.labelSm.copyWith(
-                                color: AppColors.onSurfaceVariant,
+                            if (widget.entry.year != null)
+                              Text(
+                                '${widget.entry.year}',
+                                style: AppTextStyles.labelSm.copyWith(
+                                  color: AppColors.onSurfaceVariant,
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),
                     ),
                   ),
                 ),
-                // Bookmark badge
+                // Remove button — always visible in top-right corner
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(128),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.bookmark,
-                      size: 14,
-                      color: AppColors.onSurface,
+                  child: GestureDetector(
+                    onTap: widget.onRemove,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(153),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.glassBorder),
+                      ),
+                      child: const Icon(
+                        Icons.bookmark_remove,
+                        size: 16,
+                        color: AppColors.onSurface,
+                      ),
                     ),
                   ),
                 ),
